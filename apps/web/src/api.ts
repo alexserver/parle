@@ -39,6 +39,17 @@ export async function uploadAudio(file: File): Promise<UploadResponse> {
   return response.json()
 }
 
+export async function getAllTranscripts(): Promise<Conversation[]> {
+  const response = await fetch(`${API_BASE_URL}/transcripts`)
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.error || 'Failed to get transcripts')
+  }
+
+  return response.json()
+}
+
 export async function getTranscript(id: string): Promise<Conversation> {
   const response = await fetch(`${API_BASE_URL}/transcripts/${id}`)
 

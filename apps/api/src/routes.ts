@@ -116,6 +116,22 @@ app.post('/upload', async (c) => {
   }
 })
 
+app.get('/transcripts', async (c) => {
+  try {
+    const conversations = await prisma.conversation.findMany({
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
+
+    logger.info('Retrieved all transcripts', { count: conversations.length })
+    return c.json(conversations)
+  } catch (error) {
+    logger.error('Failed to get all transcripts', { error: error instanceof Error ? error.message : 'Unknown error' })
+    return c.json({ error: 'Failed to get transcripts' }, 500)
+  }
+})
+
 app.get('/transcripts/:id', async (c) => {
   try {
     const id = c.req.param('id')

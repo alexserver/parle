@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { uploadAudio, getTranscript, UploadResponse, Conversation } from './api'
+import { useState, useEffect } from 'react'
+import { uploadAudio, getTranscript, getAllTranscripts, UploadResponse, Conversation } from './api'
 import './index.css'
 
 function App() {
@@ -9,6 +9,26 @@ function App() {
   const [searchId, setSearchId] = useState('')
   const [searchResult, setSearchResult] = useState<Conversation | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [allTranscripts, setAllTranscripts] = useState<Conversation[]>([])
+  const [isLoadingTranscripts, setIsLoadingTranscripts] = useState(true)
+  const [selectedTranscript, setSelectedTranscript] = useState<Conversation | null>(null)
+
+  // Load all transcripts on component mount
+  useEffect(() => {
+    loadAllTranscripts()
+  }, [])
+
+  const loadAllTranscripts = async () => {
+    setIsLoadingTranscripts(true)
+    try {
+      const transcripts = await getAllTranscripts()
+      setAllTranscripts(transcripts)
+    } catch (err) {
+      console.error('Failed to load transcripts:', err)
+    } finally {
+      setIsLoadingTranscripts(false)
+    }
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -27,6 +47,8 @@ function App() {
     try {
       const result = await uploadAudio(file)
       setUploadResult(result)
+      // Refresh the transcripts list after successful upload
+      loadAllTranscripts()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed')
     } finally {
@@ -46,6 +68,31 @@ function App() {
       setError(err instanceof Error ? err.message : 'Search failed')
       setSearchResult(null)
     }
+  }
+
+  const formatFileSize = (bytes: number) => {
+    return (bytes / 1024 / 1024).toFixed(2) + ' MB'
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString()
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'summarized': return 'bg-green-100 text-green-800'
+      case 'transcribed': return 'bg-blue-100 text-blue-800'
+      case 'failed': return 'bg-red-100 text-red-800'
+      default: return 'bg-yellow-100 text-yellow-800'
+    }
+  }
+
+  const handleViewDetail = (transcript: Conversation) => {
+    setSelectedTranscript(transcript)
+  }
+
+  const closeDetailModal = () => {
+    setSelectedTranscript(null)
   }
 
   return (
@@ -206,6 +253,152 @@ function App() {
             </div>
           )}
         </div>
+
+        {/* All Transcripts Section */}
+        <div className="bg-white rounded-lg shadow-md p-6 mt-8">
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            All Transcripts
+          </h2>
+          
+          {isLoadingTranscripts ? (
+            <div className="text-center py-4">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <p className="mt-2 text-gray-600">Loading transcripts...</p>
+            </div>
+          ) : allTranscripts.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No transcripts found. Upload an audio file to get started!</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full table-auto">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      File Name
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Size
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {allTranscripts.map((transcript) => (
+                    <tr key={transcript.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {transcript.originalFilename}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {transcript.mimeType}
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatFileSize(transcript.sizeBytes)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(transcript.status)}`}>
+                          {transcript.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {formatDate(transcript.createdAt)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium">
+                        <button
+                          onClick={() => handleViewDetail(transcript)}
+                          className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-1 rounded-md transition-colors"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Detail Modal */}
+        {selectedTranscript && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Transcript Details
+                  </h3>
+                  <button
+                    onClick={closeDetailModal}
+                    className="text-gray-400 hover:text-gray-600 text-2xl"
+                  >
+                    ×
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="font-medium">File Name:</span>
+                      <p className="text-gray-700">{selectedTranscript.originalFilename}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Size:</span>
+                      <p className="text-gray-700">{formatFileSize(selectedTranscript.sizeBytes)}</p>
+                    </div>
+                    <div>
+                      <span className="font-medium">Status:</span>
+                      <span className={`ml-2 px-2 py-1 text-sm rounded-full ${getStatusColor(selectedTranscript.status)}`}>
+                        {selectedTranscript.status}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-medium">Created:</span>
+                      <p className="text-gray-700">{formatDate(selectedTranscript.createdAt)}</p>
+                    </div>
+                  </div>
+
+                  {selectedTranscript.transcriptText && (
+                    <div>
+                      <span className="font-medium">Full Transcript:</span>
+                      <div className="mt-2 p-4 bg-gray-50 rounded-lg text-sm whitespace-pre-wrap max-h-60 overflow-y-auto">
+                        {selectedTranscript.transcriptText}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedTranscript.summaryText && (
+                    <div>
+                      <span className="font-medium">Summary:</span>
+                      <div className="mt-2 p-4 bg-blue-50 rounded-lg text-sm">
+                        {selectedTranscript.summaryText}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedTranscript.errorMessage && (
+                    <div>
+                      <span className="font-medium">Error:</span>
+                      <div className="mt-2 p-4 bg-red-50 rounded-lg text-sm text-red-700">
+                        {selectedTranscript.errorMessage}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
