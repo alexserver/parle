@@ -1,0 +1,31 @@
+{
+  "name": "transcriber-monorepo",
+  "version": "1.0.0",
+  "description": "Audio transcription monorepo with API and Web frontend",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "cd apps/api && bun run dev",
+    "dev:web": "cd apps/web && npm run dev",
+    "build": "npm run build:api && npm run build:web",
+    "build:api": "cd apps/api && bun run build",
+    "build:web": "cd apps/web && npm run build",
+    "db:setup": "cd apps/api && bun run db:generate && bun run db:push",
+    "db:clean": "cd apps/api && bun run db:push --force-reset",
+    "db:studio": "cd apps/api && bun run db:studio",
+    "db:migrate": "cd apps/api && bun run db:migrate",
+    "install:all": "cd apps/api && bun install && cd ../web && npm install",
+    "clean": "npm run db:clean && rm -rf apps/*/node_modules apps/*/dist apps/api/uploads/* apps/api/.env"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+}

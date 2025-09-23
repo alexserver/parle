@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TranscriptStatus {
+  initial
+  transcribed
+  summarized
+  failed
+}
+
+model Conversation {
+  id               String          @id @default(cuid())
+  originalFilename String
+  storagePath      String
+  mimeType         String
+  sizeBytes        Int
+  durationSec      Int?
+  status           TranscriptStatus @default(initial)
+  transcriptText   String?
+  summaryText      String?
+  errorMessage     String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
