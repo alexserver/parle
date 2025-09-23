@@ -18,7 +18,7 @@
     "db:studio": "cd apps/api && bun run db:studio",
     "db:migrate": "cd apps/api && bun run db:migrate",
     "install:all": "cd apps/api && bun install && cd ../web && npm install",
-    "clean": "npm run db:clean && rm -rf apps/*/node_modules apps/*/dist apps/api/uploads/* apps/api/.env"
+    "clean": "npm run db:clean && rm -rf apps/*/node_modules apps/*/dist apps/api/uploads/*"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

@@ -6,6 +6,7 @@ import { prisma } from './prisma'
 import { transcribeAudio } from './services/transcribe'
 import { summarizeTranscript } from './services/summarize'
 import { UploadResponse, HealthResponse } from './types'
+import { logger } from './services/logger'
 
 const app = new Hono()
 
@@ -22,10 +23,12 @@ app.post('/upload', async (c) => {
     const audioFile = body.audio as File
 
     if (!audioFile) {
+      logger.warn('Upload rejected: No audio file provided')
       return c.json({ error: 'No audio file provided' }, 400)
     }
 
     if (!audioFile.type.startsWith('audio/')) {
+      logger.warn('Upload rejected: Invalid file type', { type: audioFile.type, filename: audioFile.name })
       return c.json({ error: 'File must be an audio file' }, 400)
     }
 
@@ -49,8 +52,12 @@ app.post('/upload', async (c) => {
       }
     })
 
+    logger.uploadStart(audioFile.name, audioFile.size, conversation.id)
+    logger.uploadSuccess(audioFile.name, conversation.id, storagePath)
+
     try {
-      const transcriptText = await transcribeAudio(storagePath)
+      logger.transcriptionStart(conversation.id, storagePath)
+      const transcriptText = await transcribeAudio(storagePath, conversation.id)
       
       conversation = await prisma.conversation.update({
         where: { id: conversation.id },
@@ -60,8 +67,12 @@ app.post('/upload', async (c) => {
         }
       })
 
+      const isRealTranscription = !transcriptText.startsWith('[MOCK TRANSCRIPT')
+      logger.transcriptionSuccess(conversation.id, transcriptText.length, isRealTranscription)
+
       try {
-        const summaryText = await summarizeTranscript(transcriptText)
+        logger.summarizationStart(conversation.id, transcriptText.length)
+        const summaryText = await summarizeTranscript(transcriptText, conversation.id)
         
         conversation = await prisma.conversation.update({
           where: { id: conversation.id },
@@ -70,16 +81,21 @@ app.post('/upload', async (c) => {
             status: 'summarized'
           }
         })
+
+        const isRealSummary = !summaryText.includes('TODO: This is a mock summary')
+        logger.summarizationSuccess(conversation.id, summaryText.length, isRealSummary)
       } catch (summaryError) {
-        console.error('Summary error:', summaryError)
+        const errorMessage = summaryError instanceof Error ? summaryError.message : 'Unknown summarization error'
+        logger.summarizationError(conversation.id, errorMessage)
       }
     } catch (transcribeError) {
-      console.error('Transcription error:', transcribeError)
+      const errorMessage = transcribeError instanceof Error ? transcribeError.message : 'Unknown transcription error'
+      logger.transcriptionError(conversation.id, errorMessage)
       await prisma.conversation.update({
         where: { id: conversation.id },
         data: {
           status: 'failed',
-          errorMessage: transcribeError instanceof Error ? transcribeError.message : 'Unknown transcription error'
+          errorMessage
         }
       })
       return c.json({ error: 'Transcription failed' }, 500)
