@@ -1,13 +1,53 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranscripts } from '../contexts/TranscriptContext'
+import SearchForm from '../components/SearchForm'
 
 const TranscriptsPage = () => {
   const { transcripts, isLoading, loadTranscripts } = useTranscripts()
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchType, setSearchType] = useState('filename')
+  const [isSearching, setIsSearching] = useState(false)
 
   useEffect(() => {
     loadTranscripts()
   }, [loadTranscripts])
+
+  const handleSearch = async (query: string, type: string) => {
+    setIsSearching(true)
+    setSearchQuery(query)
+    setSearchType(type)
+    
+    // Simulate search delay for UX (optional)
+    setTimeout(() => {
+      setIsSearching(false)
+    }, 300)
+  }
+
+  const filteredTranscripts = useMemo(() => {
+    if (!searchQuery) {
+      return transcripts
+    }
+
+    const query = searchQuery.toLowerCase()
+    
+    return transcripts.filter((transcript) => {
+      switch (searchType) {
+        case 'filename':
+          return transcript.originalFilename.toLowerCase().includes(query)
+        case 'content':
+          return transcript.transcriptText?.toLowerCase().includes(query) || false
+        case 'summary':
+          return transcript.summaryText?.toLowerCase().includes(query) || false
+        case 'all':
+          return transcript.originalFilename.toLowerCase().includes(query) ||
+                 transcript.transcriptText?.toLowerCase().includes(query) ||
+                 transcript.summaryText?.toLowerCase().includes(query)
+        default:
+          return true
+      }
+    })
+  }, [transcripts, searchQuery, searchType])
 
   const formatFileSize = (bytes: number) => {
     return (bytes / 1024 / 1024).toFixed(2) + ' MB'
@@ -33,7 +73,14 @@ const TranscriptsPage = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">All Transcripts</h1>
           <p className="text-gray-600 mt-1">
-            Manage and view all your audio transcriptions
+            {searchQuery ? (
+              <>
+                Found {filteredTranscripts.length} result{filteredTranscripts.length !== 1 ? 's' : ''} for "{searchQuery}"
+                {searchType !== 'all' && ` in ${searchType}`}
+              </>
+            ) : (
+              'Manage and view all your audio transcriptions'
+            )}
           </p>
         </div>
         <Link
@@ -47,6 +94,9 @@ const TranscriptsPage = () => {
         </Link>
       </div>
 
+      {/* Search Form */}
+      <SearchForm onSearch={handleSearch} isSearching={isSearching} />
+
       {/* Transcripts Table */}
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {isLoading ? (
@@ -54,13 +104,17 @@ const TranscriptsPage = () => {
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             <p className="mt-2 text-gray-600">Loading transcripts...</p>
           </div>
-        ) : transcripts.length === 0 ? (
+        ) : filteredTranscripts.length === 0 ? (
           <div className="text-center py-12">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No transcripts found</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by uploading your first audio file</p>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">
+              {searchQuery ? 'No matching transcripts found' : 'No transcripts found'}
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              {searchQuery ? 'Try adjusting your search terms or search type' : 'Get started by uploading your first audio file'}
+            </p>
             <div className="mt-6">
               <Link
                 to="/upload"
@@ -96,7 +150,7 @@ const TranscriptsPage = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {transcripts.map((transcript) => (
+                {filteredTranscripts.map((transcript) => (
                   <tr key={transcript.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>

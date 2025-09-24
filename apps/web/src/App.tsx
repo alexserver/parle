@@ -5,7 +5,6 @@ import HomePage from './pages/HomePage'
 import UploadPage from './pages/UploadPage'
 import TranscriptsPage from './pages/TranscriptsPage'
 import TranscriptDetailPage from './pages/TranscriptDetailPage'
-import SearchPage from './pages/SearchPage'
 import './index.css'
 
 function App() {
@@ -18,7 +17,6 @@ function App() {
             <Route path="upload" element={<UploadPage />} />
             <Route path="transcripts" element={<TranscriptsPage />} />
             <Route path="transcripts/:id" element={<TranscriptDetailPage />} />
-            <Route path="search" element={<SearchPage />} />
           </Route>
         </Routes>
       </Router>

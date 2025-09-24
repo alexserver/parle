@@ -7,7 +7,6 @@ const Layout = () => {
     { name: 'Dashboard', href: '/', current: location.pathname === '/' },
     { name: 'Upload', href: '/upload', current: location.pathname === '/upload' },
     { name: 'Transcripts', href: '/transcripts', current: location.pathname === '/transcripts' },
-    { name: 'Search', href: '/search', current: location.pathname === '/search' },
   ]
 
   return (
