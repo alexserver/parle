@@ -27,4 +27,8 @@ model Conversation {
   errorMessage     String?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
 }

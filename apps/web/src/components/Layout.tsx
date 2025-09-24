@@ -17,8 +17,15 @@ const Layout = () => {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <Link to="/" className="text-xl font-bold text-gray-900">
-                Audio Transcriber
+              <Link to="/" className="flex items-center space-x-3">
+                <img 
+                  src="/src/assets/parle-logo.png" 
+                  alt="Parle Logo" 
+                  className="h-8 w-8" 
+                />
+                <span className="text-xl font-bold text-gray-900">
+                  Parle | Audio Transcriber
+                </span>
               </Link>
             </div>
 

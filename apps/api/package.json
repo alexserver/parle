@@ -7,6 +7,10 @@
     "dev": "bun run --watch src/index.ts",
     "build": "bun build src/index.ts --outdir dist",
     "start": "bun run dist/index.js",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,js,json}\"",
     "db:generate": "bunx prisma generate",
     "db:push": "bunx prisma db push",
     "db:migrate": "bunx prisma migrate dev",
@@ -21,6 +25,11 @@
   "devDependencies": {
     "bun-types": "latest",
     "prisma": "^5.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@eslint/js": "^9.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.0"
   }
 }

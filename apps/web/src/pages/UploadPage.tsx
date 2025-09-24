@@ -14,6 +14,23 @@ const UploadPage = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
     if (selectedFile) {
+      // Check file size (25MB = 25 * 1024 * 1024 bytes)
+      const maxSize = 25 * 1024 * 1024
+      if (selectedFile.size > maxSize) {
+        setError('File size must be 25MB or less')
+        setFile(null)
+        return
+      }
+
+      // Check file type
+      const allowedTypes = ['audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'video/mp4']
+      if (!allowedTypes.includes(selectedFile.type) && 
+          !selectedFile.name.toLowerCase().match(/\.(mp3|mp4|m4a)$/)) {
+        setError('Only MP3, MP4, and M4A files are supported')
+        setFile(null)
+        return
+      }
+
       setFile(selectedFile)
       setError(null)
       setUploadResult(null)
@@ -52,7 +69,7 @@ const UploadPage = () => {
           Upload Audio File
         </h1>
         <p className="text-lg text-gray-600">
-          Upload your MP3 or WAV file to get started with AI transcription
+          Upload your MP3, MP4 or M4A file to get started with AI transcription
         </p>
       </div>
 
@@ -89,14 +106,14 @@ const UploadPage = () => {
                       id="file-upload"
                       name="file-upload"
                       type="file"
-                      accept=".mp3,.wav"
+                      accept=".mp3,.mp4,.m4a"
                       className="sr-only"
                       onChange={handleFileChange}
                     />
                   </label>
                   <p className="pl-1">or drag and drop</p>
                 </div>
-                <p className="text-xs text-gray-500">MP3, WAV up to 10MB</p>
+                <p className="text-xs text-gray-500">MP3, MP4, M4A up to 25MB</p>
               </div>
             </div>
           </div>

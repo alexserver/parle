@@ -29,7 +29,7 @@ const HomePage = () => {
       {/* Welcome Section */}
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          Welcome to Audio Transcriber
+          Welcome to Parle, your conversation analyzer
         </h1>
         <p className="text-lg text-gray-600 mb-8">
           Transform your audio files into text with AI-powered transcription and summarization
