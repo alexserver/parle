@@ -46,12 +46,13 @@ async function main() {
   console.log('   Test User: test / test123')
 }
 
-main()
-  .then(async () => {
-    await prisma.$disconnect()
-  })
-  .catch(async e => {
-    console.log(e)
-    await prisma.$disconnect()
-    process.exit(1)
-  })
+// this script only works with bun, so we need to call it like this
+// to work with tsx we need to wrap it in a IIFE function (async () => { ... })()
+try {
+  await main()
+  await prisma.$disconnect()
+} catch (e) {
+  console.error(e)
+  await prisma.$disconnect()
+  process.exit(1)
+}
