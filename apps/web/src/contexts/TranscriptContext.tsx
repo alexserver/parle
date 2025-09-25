@@ -30,7 +30,7 @@ export const TranscriptProvider = ({ children }: TranscriptProviderProps) => {
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { getToken, isLoaded } = useAuth()
+  const { userId, isLoaded } = useAuth()
 
   const loadTranscripts = useCallback(async () => {
     // Don't load if auth is not ready
@@ -39,8 +39,9 @@ export const TranscriptProvider = ({ children }: TranscriptProviderProps) => {
     setIsLoading(true)
     setError(null)
     try {
-      const token = await getToken()
-      const data = await getAllTranscripts(token)
+      console.log('🔄 Loading transcripts...')
+      console.log('🔐 Got user ID for transcripts:', userId)
+      const data = await getAllTranscripts(userId)
       setTranscripts(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load transcripts')
@@ -48,7 +49,7 @@ export const TranscriptProvider = ({ children }: TranscriptProviderProps) => {
     } finally {
       setIsLoading(false)
     }
-  }, [getToken, isLoaded])
+  }, [userId, isLoaded])
 
   const refreshTranscripts = useCallback(async () => {
     if (!isLoaded || isRefreshing) return
@@ -56,8 +57,7 @@ export const TranscriptProvider = ({ children }: TranscriptProviderProps) => {
     setIsRefreshing(true)
     setError(null)
     try {
-      const token = await getToken()
-      const data = await getAllTranscripts(token)
+      const data = await getAllTranscripts(userId)
       setTranscripts(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to refresh transcripts')
@@ -65,7 +65,7 @@ export const TranscriptProvider = ({ children }: TranscriptProviderProps) => {
     } finally {
       setIsRefreshing(false)
     }
-  }, [getToken, isLoaded, isRefreshing])
+  }, [userId, isLoaded, isRefreshing])
 
   const value = {
     transcripts,

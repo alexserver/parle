@@ -6,7 +6,7 @@ import { getTranscript, Conversation } from '../api'
 const TranscriptDetailPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { getToken } = useAuth()
+  const { userId } = useAuth()
   const [transcript, setTranscript] = useState<Conversation | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -21,8 +21,7 @@ const TranscriptDetailPage = () => {
       setIsLoading(true)
       setError(null)
       try {
-        const token = await getToken()
-        const data = await getTranscript(id, token)
+        const data = await getTranscript(id, userId)
         setTranscript(data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load transcript')
@@ -32,7 +31,7 @@ const TranscriptDetailPage = () => {
     }
 
     fetchTranscript()
-  }, [id, navigate, getToken])
+  }, [id, navigate, userId])
 
   const formatFileSize = (bytes: number) => {
     return (bytes / 1024 / 1024).toFixed(2) + ' MB'
