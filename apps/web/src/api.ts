@@ -9,6 +9,7 @@ export interface UploadResponse {
 
 export interface Conversation {
   id: string
+  userId: string // Add userId field
   originalFilename: string
   storagePath: string
   mimeType: string
@@ -22,12 +23,20 @@ export interface Conversation {
   updatedAt: string
 }
 
-export async function uploadAudio(file: File): Promise<UploadResponse> {
+/**
+ * Helper function to create authentication headers
+ */
+function createAuthHeaders(token: string | null): HeadersInit {
+  return token ? { 'Authorization': `Bearer ${token}` } : {}
+}
+
+export async function uploadAudio(file: File, token: string | null): Promise<UploadResponse> {
   const formData = new FormData()
   formData.append('audio', file)
 
   const response = await fetch(`${API_BASE_URL}/upload`, {
     method: 'POST',
+    headers: createAuthHeaders(token),
     body: formData
   })
 
@@ -39,8 +48,10 @@ export async function uploadAudio(file: File): Promise<UploadResponse> {
   return response.json()
 }
 
-export async function getAllTranscripts(): Promise<Conversation[]> {
-  const response = await fetch(`${API_BASE_URL}/transcripts`)
+export async function getAllTranscripts(token: string | null): Promise<Conversation[]> {
+  const response = await fetch(`${API_BASE_URL}/transcripts`, {
+    headers: createAuthHeaders(token)
+  })
 
   if (!response.ok) {
     const error = await response.json()
@@ -50,8 +61,10 @@ export async function getAllTranscripts(): Promise<Conversation[]> {
   return response.json()
 }
 
-export async function getTranscript(id: string): Promise<Conversation> {
-  const response = await fetch(`${API_BASE_URL}/transcripts/${id}`)
+export async function getTranscript(id: string, token: string | null): Promise<Conversation> {
+  const response = await fetch(`${API_BASE_URL}/transcripts/${id}`, {
+    headers: createAuthHeaders(token)
+  })
 
   if (!response.ok) {
     const error = await response.json()

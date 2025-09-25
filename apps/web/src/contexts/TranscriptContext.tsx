@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import { useAuth } from '@clerk/clerk-react'
 import { getAllTranscripts, Conversation } from '../api'
 
 interface TranscriptContextType {
@@ -27,12 +28,14 @@ export const TranscriptProvider = ({ children }: TranscriptProviderProps) => {
   const [transcripts, setTranscripts] = useState<Conversation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { getToken } = useAuth()
 
   const loadTranscripts = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const data = await getAllTranscripts()
+      const token = await getToken()
+      const data = await getAllTranscripts(token)
       setTranscripts(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load transcripts')
@@ -40,16 +43,17 @@ export const TranscriptProvider = ({ children }: TranscriptProviderProps) => {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [getToken])
 
   const refreshTranscripts = useCallback(async () => {
     try {
-      const data = await getAllTranscripts()
+      const token = await getToken()
+      const data = await getAllTranscripts(token)
       setTranscripts(data)
     } catch (err) {
       console.error('Failed to refresh transcripts:', err)
     }
-  }, [])
+  }, [getToken])
 
   const value = {
     transcripts,
