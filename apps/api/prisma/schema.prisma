@@ -16,6 +16,7 @@ enum TranscriptStatus {
 
 model Conversation {
   id               String          @id @default(cuid())
+  userId           String          // Clerk user ID for data isolation
   originalFilename String
   storagePath      String
   mimeType         String
@@ -31,4 +32,6 @@ model Conversation {
   @@index([status])
   @@index([createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
+  @@index([userId])                    // New index for user filtering
+  @@index([userId, createdAt(sort: Desc)]) // Composite index for user + time queries
 }
