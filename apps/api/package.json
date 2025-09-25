@@ -1,5 +1,5 @@
 {
-  "name": "transcriber-api",
+  "name": "parle-api",
   "version": "1.0.0",
   "description": "Audio transcription API",
   "main": "src/index.ts",

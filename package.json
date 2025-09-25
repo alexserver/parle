@@ -1,5 +1,5 @@
 {
-  "name": "transcriber-monorepo",
+  "name": "parle-monorepo",
   "version": "1.0.0",
   "description": "Audio transcription monorepo with API and Web frontend",
   "private": true,
