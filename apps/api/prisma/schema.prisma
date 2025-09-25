@@ -7,16 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum TranscriptStatus {
-  initial
-  transcribed
-  summarized
-  failed
-}
-
 model Conversation {
-  id               String          @id @default(cuid())
-  userId           String          // Clerk user ID for data isolation
+  id               String           @id @default(cuid())
   originalFilename String
   storagePath      String
   mimeType         String
@@ -26,12 +18,20 @@ model Conversation {
   transcriptText   String?
   summaryText      String?
   errorMessage     String?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  userId           String           @default("system")
 
   @@index([status])
   @@index([createdAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
-  @@index([userId])                    // New index for user filtering
-  @@index([userId, createdAt(sort: Desc)]) // Composite index for user + time queries
+  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+enum TranscriptStatus {
+  initial
+  transcribed
+  summarized
+  failed
 }
