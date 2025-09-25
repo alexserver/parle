@@ -1,8 +1,67 @@
-import { SignInButton, SignUpButton } from '@clerk/clerk-react'
+import { useEffect, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { SignInButton, SignUpButton, useAuth } from '@clerk/clerk-react'
 
 const LandingPage = () => {
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { isSignedIn, isLoaded } = useAuth()
+  const [showSignInPrompt, setShowSignInPrompt] = useState(false)
+
+  useEffect(() => {
+    // Redirect to dashboard if already signed in
+    if (isLoaded && isSignedIn) {
+      navigate('/dashboard', { replace: true })
+      return
+    }
+
+    // Show sign-in prompt if redirected from protected route
+    if (searchParams.get('sign-in') === 'true') {
+      setShowSignInPrompt(true)
+    }
+  }, [isSignedIn, isLoaded, navigate, searchParams])
+
+  // Don't render until auth is loaded
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+      {/* Sign-in Required Banner */}
+      {showSignInPrompt && (
+        <div className="bg-yellow-50 border-b border-yellow-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <svg className="h-5 w-5 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                  <p className="ml-3 text-sm text-yellow-700">
+                    <span className="font-medium">Authentication required.</span> Please sign in to access your transcripts and upload files.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setShowSignInPrompt(false)}
+                  className="text-yellow-600 hover:text-yellow-500"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
         <div className="text-center">

@@ -2,10 +2,11 @@ import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useUser } from '@clerk/clerk-react'
 import { useTranscripts } from '../contexts/TranscriptContext'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 const DashboardPage = () => {
-  const { user } = useUser()
-  const { transcripts, isLoading, loadTranscripts } = useTranscripts()
+  const { user, isLoaded: userLoaded } = useUser()
+  const { transcripts, isLoading, isRefreshing, error, loadTranscripts } = useTranscripts()
 
   useEffect(() => {
     loadTranscripts()
@@ -24,6 +25,15 @@ const DashboardPage = () => {
     }
   }
 
+  // Show loading state while user auth is loading
+  if (!userLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <LoadingSpinner size="lg" text="Loading your dashboard..." />
+      </div>
+    )
+  }
+
   const recentTranscripts = transcripts.slice(0, 5)
 
   return (
@@ -36,6 +46,28 @@ const DashboardPage = () => {
         <p className="text-lg text-gray-600 mb-8">
           Transform your audio files into text with AI-powered transcription and summarization
         </p>
+        
+        {/* User Stats */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mb-8 max-w-2xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+            <div>
+              <div className="text-2xl font-bold text-blue-600">{transcripts.length}</div>
+              <div className="text-sm text-gray-600">Total Transcripts</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-green-600">
+                {transcripts.filter(t => t.status === 'summarized').length}
+              </div>
+              <div className="text-sm text-gray-600">Completed</div>
+            </div>
+            <div>
+              <div className="text-2xl font-bold text-purple-600">
+                {user?.emailAddresses?.[0]?.emailAddress ? '1' : '0'}
+              </div>
+              <div className="text-sm text-gray-600">Account Active</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Quick Actions */}
@@ -79,18 +111,36 @@ const DashboardPage = () => {
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-gray-800">Recent Transcripts</h2>
-          <Link
-            to="/transcripts"
-            className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-          >
-            View all →
-          </Link>
+          <div className="flex items-center space-x-3">
+            {isRefreshing && (
+              <LoadingSpinner size="sm" />
+            )}
+            <Link
+              to="/transcripts"
+              className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+            >
+              View all →
+            </Link>
+          </div>
         </div>
 
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+            <div className="flex">
+              <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+              <div className="ml-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {isLoading ? (
-          <div className="text-center py-8">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-600">Loading transcripts...</p>
+          <div className="py-8">
+            <LoadingSpinner size="md" text="Loading your transcripts..." />
           </div>
         ) : recentTranscripts.length === 0 ? (
           <div className="text-center py-12">

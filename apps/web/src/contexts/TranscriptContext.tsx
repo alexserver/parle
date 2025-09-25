@@ -5,6 +5,7 @@ import { getAllTranscripts, Conversation } from '../api'
 interface TranscriptContextType {
   transcripts: Conversation[]
   isLoading: boolean
+  isRefreshing: boolean
   error: string | null
   loadTranscripts: () => Promise<void>
   refreshTranscripts: () => Promise<void>
@@ -27,10 +28,14 @@ interface TranscriptProviderProps {
 export const TranscriptProvider = ({ children }: TranscriptProviderProps) => {
   const [transcripts, setTranscripts] = useState<Conversation[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { getToken } = useAuth()
+  const { getToken, isLoaded } = useAuth()
 
   const loadTranscripts = useCallback(async () => {
+    // Don't load if auth is not ready
+    if (!isLoaded) return
+    
     setIsLoading(true)
     setError(null)
     try {
@@ -43,21 +48,29 @@ export const TranscriptProvider = ({ children }: TranscriptProviderProps) => {
     } finally {
       setIsLoading(false)
     }
-  }, [getToken])
+  }, [getToken, isLoaded])
 
   const refreshTranscripts = useCallback(async () => {
+    if (!isLoaded || isRefreshing) return
+    
+    setIsRefreshing(true)
+    setError(null)
     try {
       const token = await getToken()
       const data = await getAllTranscripts(token)
       setTranscripts(data)
     } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to refresh transcripts')
       console.error('Failed to refresh transcripts:', err)
+    } finally {
+      setIsRefreshing(false)
     }
-  }, [getToken])
+  }, [getToken, isLoaded, isRefreshing])
 
   const value = {
     transcripts,
     isLoading,
+    isRefreshing,
     error,
     loadTranscripts,
     refreshTranscripts

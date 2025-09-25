@@ -1,5 +1,5 @@
 import { Link, useLocation, Outlet } from 'react-router-dom'
-import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react'
 
 const Layout = () => {
   const location = useLocation()
@@ -52,38 +52,48 @@ const Layout = () => {
             {/* User Authentication */}
             <div className="flex items-center space-x-4">
               <SignedOut>
-                <SignInButton mode="modal">
-                  <button className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
-                    Sign In
-                  </button>
-                </SignInButton>
+                <div className="flex items-center space-x-3">
+                  <SignInButton mode="modal">
+                    <button className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                      Sign In
+                    </button>
+                  </SignInButton>
+                  <SignUpButton mode="modal">
+                    <button className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
+                      Get Started
+                    </button>
+                  </SignUpButton>
+                </div>
               </SignedOut>
               <SignedIn>
-                <UserButton 
-                  afterSignOutUrl="/"
-                  appearance={{
-                    elements: {
-                      avatarBox: "h-8 w-8"
-                    }
-                  }}
-                />
-              </SignedIn>
-
-              {/* Mobile menu button - only for authenticated users */}
-              <SignedIn>
-                <div className="md:hidden">
-                  <button
-                    type="button"
-                    className="text-gray-500 hover:text-gray-700"
-                    onClick={() => {
-                      const menu = document.getElementById('mobile-menu')
-                      menu?.classList.toggle('hidden')
+                <div className="flex items-center space-x-3">
+                  <UserButton 
+                    afterSignOutUrl="/"
+                    appearance={{
+                      elements: {
+                        avatarBox: "h-8 w-8",
+                        userButtonPopoverCard: "shadow-lg border",
+                        userButtonPopoverActionButton: "hover:bg-gray-100"
+                      }
                     }}
-                  >
-                    <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                  </button>
+                  />
+                  
+                  {/* Mobile menu button - only for authenticated users */}
+                  <div className="md:hidden">
+                    <button
+                      type="button"
+                      className="text-gray-500 hover:text-gray-700 p-1"
+                      onClick={() => {
+                        const menu = document.getElementById('mobile-menu')
+                        menu?.classList.toggle('hidden')
+                      }}
+                      aria-label="Toggle mobile menu"
+                    >
+                      <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </SignedIn>
             </div>

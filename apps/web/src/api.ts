@@ -30,46 +30,82 @@ function createAuthHeaders(token: string | null): HeadersInit {
   return token ? { 'Authorization': `Bearer ${token}` } : {}
 }
 
-export async function uploadAudio(file: File, token: string | null): Promise<UploadResponse> {
-  const formData = new FormData()
-  formData.append('audio', file)
-
-  const response = await fetch(`${API_BASE_URL}/upload`, {
-    method: 'POST',
-    headers: createAuthHeaders(token),
-    body: formData
-  })
-
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Upload failed')
+/**
+ * Enhanced error handling for API responses
+ */
+async function handleApiResponse<T>(response: Response): Promise<T> {
+  if (response.status === 401) {
+    // Authentication failed - redirect to sign in
+    window.location.href = '/?sign-in=true'
+    throw new Error('Authentication required. Please sign in again.')
   }
-
+  
+  if (response.status === 403) {
+    throw new Error('Access denied. You do not have permission to access this resource.')
+  }
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Unknown error occurred' }))
+    throw new Error(error.error || `Request failed with status ${response.status}`)
+  }
+  
   return response.json()
+}
+
+/**
+ * Helper to handle token retrieval errors
+ */
+function handleTokenError(error: unknown): never {
+  console.error('Failed to get authentication token:', error)
+  throw new Error('Authentication failed. Please sign in again.')
+}
+
+export async function uploadAudio(file: File, token: string | null): Promise<UploadResponse> {
+  try {
+    const formData = new FormData()
+    formData.append('audio', file)
+
+    const response = await fetch(`${API_BASE_URL}/upload`, {
+      method: 'POST',
+      headers: createAuthHeaders(token),
+      body: formData
+    })
+
+    return handleApiResponse<UploadResponse>(response)
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Upload failed. Please try again.')
+  }
 }
 
 export async function getAllTranscripts(token: string | null): Promise<Conversation[]> {
-  const response = await fetch(`${API_BASE_URL}/transcripts`, {
-    headers: createAuthHeaders(token)
-  })
+  try {
+    const response = await fetch(`${API_BASE_URL}/transcripts`, {
+      headers: createAuthHeaders(token)
+    })
 
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to get transcripts')
+    return handleApiResponse<Conversation[]>(response)
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Failed to get transcripts. Please try again.')
   }
-
-  return response.json()
 }
 
 export async function getTranscript(id: string, token: string | null): Promise<Conversation> {
-  const response = await fetch(`${API_BASE_URL}/transcripts/${id}`, {
-    headers: createAuthHeaders(token)
-  })
+  try {
+    const response = await fetch(`${API_BASE_URL}/transcripts/${id}`, {
+      headers: createAuthHeaders(token)
+    })
 
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.error || 'Failed to get transcript')
+    return handleApiResponse<Conversation>(response)
+  } catch (error) {
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Failed to get transcript. Please try again.')
   }
-
-  return response.json()
 }
