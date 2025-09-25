@@ -3,6 +3,7 @@ import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import TranscriptProvider from './contexts/TranscriptContext'
 import LandingPage from './pages/LandingPage'
+import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
 import UploadPage from './pages/UploadPage'
 import TranscriptsPage from './pages/TranscriptsPage'
@@ -15,6 +16,7 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<LoginPage />} />
         
         {/* Protected Routes */}
         <Route path="/" element={<Layout />}>

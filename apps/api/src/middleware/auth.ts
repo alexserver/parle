@@ -1,31 +1,57 @@
 import { Context, Next } from 'hono'
 import { logger } from '../services/logger'
+import { verifyToken, JWTPayload } from '../services/auth'
+import { getUserById } from '../services/user'
+import { User } from '@prisma/client'
 
 // Extend Hono context with user information
 declare module 'hono' {
   interface ContextVariableMap {
     userId: string
+    user: User
+    userPayload: JWTPayload
   }
 }
 
 /**
- * Simple auth middleware - just extracts user ID from header
- * Trusts the frontend to provide the correct user ID after Clerk authentication
+ * JWT-based auth middleware - validates JWT token and sets user context
  */
 export const authMiddleware = async (c: Context, next: Next) => {
   try {
-    // Extract user ID from header
-    const userId = c.req.header('X-User-Id')
+    // Extract token from Authorization header
+    const authHeader = c.req.header('Authorization')
     
-    if (!userId) {
-      logger.warn('Authentication failed: Missing user ID header')
-      return c.json({ error: 'Unauthorized: Missing user ID' }, 401)
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      logger.warn('Authentication failed: Missing or invalid Authorization header')
+      return c.json({ error: 'Unauthorized: Missing or invalid token' }, 401)
+    }
+
+    const token = authHeader.substring(7) // Remove "Bearer " prefix
+    
+    // Verify JWT token
+    const payload = verifyToken(token)
+    if (!payload) {
+      logger.warn('Authentication failed: Invalid or expired token')
+      return c.json({ error: 'Unauthorized: Invalid or expired token' }, 401)
+    }
+
+    // Get fresh user data from database
+    const user = await getUserById(payload.userId)
+    if (!user) {
+      logger.warn('Authentication failed: User not found', { userId: payload.userId })
+      return c.json({ error: 'Unauthorized: User not found' }, 401)
     }
 
     // Set user context
-    c.set('userId', userId)
+    c.set('userId', user.id)
+    c.set('user', user)
+    c.set('userPayload', payload)
 
-    logger.info('User authenticated successfully', { userId })
+    logger.info('User authenticated successfully', { 
+      userId: user.id, 
+      username: user.username,
+      role: user.role 
+    })
 
     // Continue to next middleware/handler
     await next()
@@ -40,15 +66,25 @@ export const authMiddleware = async (c: Context, next: Next) => {
 
 /**
  * Optional middleware - allows both authenticated and unauthenticated requests
- * Sets user context if user ID is provided
+ * Sets user context if valid token is provided
  */
 export const optionalAuthMiddleware = async (c: Context, next: Next) => {
   try {
-    const userId = c.req.header('X-User-Id')
+    const authHeader = c.req.header('Authorization')
     
-    if (userId) {
-      c.set('userId', userId)
-      logger.info('Optional auth: User ID set', { userId })
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7)
+      const payload = verifyToken(token)
+      
+      if (payload) {
+        const user = await getUserById(payload.userId)
+        if (user) {
+          c.set('userId', user.id)
+          c.set('user', user)
+          c.set('userPayload', payload)
+          logger.info('Optional auth: User authenticated', { userId: user.id })
+        }
+      }
     }
 
     await next()

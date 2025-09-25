@@ -1,22 +1,16 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { ClerkProvider } from '@clerk/clerk-react'
+import { AuthProvider } from './contexts/AuthContext'
 import ErrorBoundary from './components/ErrorBoundary.tsx'
 import App from './App.tsx'
 import './index.css'
 
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
-
-if (!PUBLISHABLE_KEY) {
-  throw new Error("Missing Publishable Key")
-}
-
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
-      <ClerkProvider publishableKey={PUBLISHABLE_KEY}>
+      <AuthProvider>
         <App />
-      </ClerkProvider>
+      </AuthProvider>
     </ErrorBoundary>
   </React.StrictMode>,
 )

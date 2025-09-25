@@ -1,4 +1,4 @@
-import { useAuth } from '@clerk/clerk-react'
+import { useAuth } from '../contexts/AuthContext'
 import { Navigate, useLocation } from 'react-router-dom'
 import LoadingSpinner from './LoadingSpinner'
 
@@ -7,11 +7,11 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { isLoaded, isSignedIn } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
   const location = useLocation()
 
   // Show loading spinner while checking auth status
-  if (!isLoaded) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" text="Checking authentication..." />
@@ -19,9 +19,9 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     )
   }
 
-  // Redirect to landing page with sign-in prompt if not signed in
-  if (!isSignedIn) {
-    const redirectUrl = `/?sign-in=true&from=${encodeURIComponent(location.pathname)}`
+  // Redirect to login page if not authenticated
+  if (!isAuthenticated) {
+    const redirectUrl = `/login?from=${encodeURIComponent(location.pathname)}`
     return <Navigate to={redirectUrl} replace />
   }
 

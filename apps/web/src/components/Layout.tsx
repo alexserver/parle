@@ -1,14 +1,20 @@
 import { Link, useLocation, Outlet } from 'react-router-dom'
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from '@clerk/clerk-react'
+import { useAuth } from '../contexts/AuthContext'
 
 const Layout = () => {
   const location = useLocation()
+  const { user, logout, isAuthenticated } = useAuth()
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', current: location.pathname === '/dashboard' },
     { name: 'Upload', href: '/upload', current: location.pathname === '/upload' },
     { name: 'Transcripts', href: '/transcripts', current: location.pathname === '/transcripts' },
   ]
+
+  const handleLogout = () => {
+    logout()
+    window.location.href = '/'
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -31,7 +37,7 @@ const Layout = () => {
             </div>
 
             {/* Navigation - Only show for authenticated users */}
-            <SignedIn>
+            {isAuthenticated && (
               <nav className="hidden md:flex space-x-8">
                 {navigation.map((item) => (
                   <Link
@@ -47,36 +53,41 @@ const Layout = () => {
                   </Link>
                 ))}
               </nav>
-            </SignedIn>
+            )}
 
             {/* User Authentication */}
             <div className="flex items-center space-x-4">
-              <SignedOut>
+              {!isAuthenticated ? (
                 <div className="flex items-center space-x-3">
-                  <SignInButton mode="modal">
-                    <button className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors">
-                      Sign In
-                    </button>
-                  </SignInButton>
-                  <SignUpButton mode="modal">
-                    <button className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
-                      Get Started
-                    </button>
-                  </SignUpButton>
+                  <Link
+                    to="/login"
+                    className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors"
+                  >
+                    Get Started
+                  </Link>
                 </div>
-              </SignedOut>
-              <SignedIn>
+              ) : (
                 <div className="flex items-center space-x-3">
-                  <UserButton 
-                    afterSignOutUrl="/"
-                    appearance={{
-                      elements: {
-                        avatarBox: "h-8 w-8",
-                        userButtonPopoverCard: "shadow-lg border",
-                        userButtonPopoverActionButton: "hover:bg-gray-100"
-                      }
-                    }}
-                  />
+                  <div className="flex items-center space-x-2">
+                    <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-medium">
+                        {user?.username.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <span className="text-sm text-gray-700">{user?.username}</span>
+                  </div>
+                  <button
+                    onClick={handleLogout}
+                    className="text-gray-600 hover:text-gray-800 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Sign Out
+                  </button>
                   
                   {/* Mobile menu button - only for authenticated users */}
                   <div className="md:hidden">
@@ -95,12 +106,12 @@ const Layout = () => {
                     </button>
                   </div>
                 </div>
-              </SignedIn>
+              )}
             </div>
           </div>
 
           {/* Mobile Navigation - Only for authenticated users */}
-          <SignedIn>
+          {isAuthenticated && (
             <div id="mobile-menu" className="hidden md:hidden pb-3 pt-2">
               <div className="space-y-1">
                 {navigation.map((item) => (
@@ -118,7 +129,7 @@ const Layout = () => {
                 ))}
               </div>
             </div>
-          </SignedIn>
+          )}
         </div>
       </header>
 

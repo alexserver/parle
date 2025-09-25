@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { SignInButton, SignUpButton, useAuth } from '@clerk/clerk-react'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 const LandingPage = () => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { isSignedIn, isLoaded } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
   const [showSignInPrompt, setShowSignInPrompt] = useState(false)
 
   useEffect(() => {
-    // Redirect to dashboard if already signed in
-    if (isLoaded && isSignedIn) {
+    // Redirect to dashboard if already authenticated
+    if (!isLoading && isAuthenticated) {
       navigate('/dashboard', { replace: true })
       return
     }
@@ -19,10 +19,10 @@ const LandingPage = () => {
     if (searchParams.get('sign-in') === 'true') {
       setShowSignInPrompt(true)
     }
-  }, [isSignedIn, isLoaded, navigate, searchParams])
+  }, [isAuthenticated, isLoading, navigate, searchParams])
 
   // Don't render until auth is loaded
-  if (!isLoaded) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -74,17 +74,13 @@ const LandingPage = () => {
             making your conversations searchable and actionable.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <SignUpButton mode="modal">
-              <button className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors">
-                Get Started Free
-              </button>
-            </SignUpButton>
-            <SignInButton mode="modal">
-              <button className="border border-gray-300 text-gray-700 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors">
-                Sign In
-              </button>
-            </SignInButton>
+          <div className="flex justify-center">
+            <Link
+              to="/login"
+              className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors"
+            >
+              Log In
+            </Link>
           </div>
         </div>
       </div>
@@ -180,11 +176,12 @@ const LandingPage = () => {
           <p className="text-xl mb-8 text-blue-100">
             Join thousands of users who trust Parle to transcribe and analyze their audio content.
           </p>
-          <SignUpButton mode="modal">
-            <button className="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors">
-              Start Transcribing Today
-            </button>
-          </SignUpButton>
+          <Link
+            to="/login"
+            className="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors"
+          >
+            Log In
+          </Link>
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { secureHeaders } from 'hono/secure-headers'
 import { health } from './health'
 import { upload } from './upload'
 import { transcripts } from './transcripts'
+import { auth } from './auth'
 
 const app = new Hono()
 
@@ -15,7 +16,7 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 const corsConfig = {
   origin: allowedOrigins,
   allowMethods: ['GET', 'POST', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'X-User-Id'],
+  allowHeaders: ['Content-Type', 'Authorization'],
   credentials: false,
 }
 
@@ -23,6 +24,7 @@ app.use('/*', cors(corsConfig))
 app.use('/*', secureHeaders())
 
 app.route('/health', health)
+app.route('/auth', auth)
 app.route('/upload', upload)
 app.route('/transcripts', transcripts)
 

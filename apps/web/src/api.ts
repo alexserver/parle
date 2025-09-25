@@ -27,8 +27,8 @@ export interface Conversation {
 /**
  * Helper function to create authentication headers
  */
-function createAuthHeaders(userId: string | null): HeadersInit {
-  return userId ? { 'X-User-Id': userId } : {}
+function createAuthHeaders(token: string | null): HeadersInit {
+  return token ? { 'Authorization': `Bearer ${token}` } : {}
 }
 
 /**
@@ -44,9 +44,9 @@ async function handleApiResponse<T>(response: Response): Promise<T> {
   })
   
   if (response.status === 401) {
-    // Authentication failed - redirect to sign in
-    console.log('🚫 401 Unauthorized - redirecting to sign in')
-    window.location.href = '/?sign-in=true'
+    // Authentication failed - redirect to login
+    console.log('🚫 401 Unauthorized - redirecting to login')
+    window.location.href = '/login'
     throw new Error('Authentication required. Please sign in again.')
   }
   
@@ -66,23 +66,15 @@ async function handleApiResponse<T>(response: Response): Promise<T> {
   return data
 }
 
-/**
- * Helper to handle token retrieval errors
- */
-function handleTokenError(error: unknown): never {
-  console.error('Failed to get authentication token:', error)
-  throw new Error('Authentication failed. Please sign in again.')
-}
 
-export async function uploadAudio(file: File, userId: string | null): Promise<UploadResponse> {
+export async function uploadAudio(file: File, token: string | null): Promise<UploadResponse> {
   try {
-    console.log('🔐 Upload - User ID present:', !!userId)
-    console.log('🔐 Upload - User ID:', userId)
+    console.log('🔐 Upload - Token present:', !!token)
     
     const formData = new FormData()
     formData.append('audio', file)
     
-    const headers = createAuthHeaders(userId)
+    const headers = createAuthHeaders(token)
     console.log('🔐 Upload - Headers:', headers)
 
     const response = await fetch(`${API_BASE_URL}/upload`, {
@@ -103,12 +95,11 @@ export async function uploadAudio(file: File, userId: string | null): Promise<Up
   }
 }
 
-export async function getAllTranscripts(userId: string | null): Promise<Conversation[]> {
+export async function getAllTranscripts(token: string | null): Promise<Conversation[]> {
   try {
-    console.log('🔐 Get transcripts - User ID present:', !!userId)
-    console.log('🔐 Get transcripts - User ID:', userId)
+    console.log('🔐 Get transcripts - Token present:', !!token)
     
-    const headers = createAuthHeaders(userId)
+    const headers = createAuthHeaders(token)
     console.log('🔐 Get transcripts - Headers:', headers)
 
     const url = `${API_BASE_URL}/transcripts`
@@ -132,10 +123,10 @@ export async function getAllTranscripts(userId: string | null): Promise<Conversa
   }
 }
 
-export async function getTranscript(id: string, userId: string | null): Promise<Conversation> {
+export async function getTranscript(id: string, token: string | null): Promise<Conversation> {
   try {
     const response = await fetch(`${API_BASE_URL}/transcripts/${id}`, {
-      headers: createAuthHeaders(userId)
+      headers: createAuthHeaders(token)
     })
 
     return handleApiResponse<Conversation>(response)

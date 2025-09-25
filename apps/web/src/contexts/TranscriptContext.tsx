@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
-import { useAuth } from '@clerk/clerk-react'
+import { useAuth } from './AuthContext'
 import { getAllTranscripts, Conversation } from '../api'
 
 interface TranscriptContextType {
@@ -30,18 +30,18 @@ export const TranscriptProvider = ({ children }: TranscriptProviderProps) => {
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { userId, isLoaded } = useAuth()
+  const { token, isAuthenticated } = useAuth()
 
   const loadTranscripts = useCallback(async () => {
-    // Don't load if auth is not ready
-    if (!isLoaded) return
+    // Don't load if not authenticated
+    if (!isAuthenticated) return
     
     setIsLoading(true)
     setError(null)
     try {
       console.log('🔄 Loading transcripts...')
-      console.log('🔐 Got user ID for transcripts:', userId)
-      const data = await getAllTranscripts(userId)
+      console.log('🔐 Got token for transcripts:', !!token)
+      const data = await getAllTranscripts(token)
       setTranscripts(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load transcripts')
@@ -49,15 +49,15 @@ export const TranscriptProvider = ({ children }: TranscriptProviderProps) => {
     } finally {
       setIsLoading(false)
     }
-  }, [userId, isLoaded])
+  }, [token, isAuthenticated])
 
   const refreshTranscripts = useCallback(async () => {
-    if (!isLoaded || isRefreshing) return
+    if (!isAuthenticated || isRefreshing) return
     
     setIsRefreshing(true)
     setError(null)
     try {
-      const data = await getAllTranscripts(userId)
+      const data = await getAllTranscripts(token)
       setTranscripts(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to refresh transcripts')
@@ -65,7 +65,7 @@ export const TranscriptProvider = ({ children }: TranscriptProviderProps) => {
     } finally {
       setIsRefreshing(false)
     }
-  }, [userId, isLoaded, isRefreshing])
+  }, [token, isAuthenticated, isRefreshing])
 
   const value = {
     transcripts,

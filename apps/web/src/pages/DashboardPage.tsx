@@ -1,11 +1,11 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { useUser } from '@clerk/clerk-react'
+import { useAuth } from '../contexts/AuthContext'
 import { useTranscripts } from '../contexts/TranscriptContext'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 const DashboardPage = () => {
-  const { user, isLoaded: userLoaded } = useUser()
+  const { user, isLoading: authLoading } = useAuth()
   const { transcripts, isLoading, isRefreshing, error, loadTranscripts } = useTranscripts()
 
   useEffect(() => {
@@ -26,7 +26,7 @@ const DashboardPage = () => {
   }
 
   // Show loading state while user auth is loading
-  if (!userLoaded) {
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <LoadingSpinner size="lg" text="Loading your dashboard..." />
@@ -41,7 +41,7 @@ const DashboardPage = () => {
       {/* Welcome Section */}
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          Welcome back{user?.firstName ? `, ${user.firstName}` : ''}!
+          Welcome back{user?.username ? `, ${user.username}` : ''}!
         </h1>
         <p className="text-lg text-gray-600 mb-8">
           Transform your audio files into text with AI-powered transcription and summarization
@@ -62,7 +62,7 @@ const DashboardPage = () => {
             </div>
             <div>
               <div className="text-2xl font-bold text-purple-600">
-                {user?.emailAddresses?.[0]?.emailAddress ? '1' : '0'}
+                {user?.email ? '1' : '0'}
               </div>
               <div className="text-sm text-gray-600">Account Active</div>
             </div>

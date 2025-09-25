@@ -7,6 +7,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  admin
+  member
+}
+
+enum UserPlan {
+  free
+  paid
+}
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String   @unique
+  password  String   // bcrypt hashed
+  role      UserRole @default(member)
+  plan      UserPlan @default(free)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  conversations Conversation[]
+}
+
 model Conversation {
   id               String           @id @default(cuid())
   originalFilename String
@@ -20,7 +43,8 @@ model Conversation {
   errorMessage     String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
-  userId           String           @default("system")
+  userId           String
+  user             User             @relation(fields: [userId], references: [id])
 
   @@index([status])
   @@index([createdAt(sort: Desc)])
