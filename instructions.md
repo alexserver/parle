@@ -20,7 +20,7 @@ You are an expert full-stack engineer. Build a minimal MVP with:
 Create a monorepo with two apps:
 
 ```
-transcriber/
+parle/
 ├─ README.md
 ├─ docker-compose.yml                # Postgres
 ├─ .env.example
@@ -144,7 +144,7 @@ services:
     image: postgres:16
     environment:
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: transcriber
+      POSTGRES_DB: parle
     ports:
       - "5432:5432"
     volumes:
@@ -158,7 +158,7 @@ volumes:
 ```
 PORT=3000
 OPENAI_API_KEY=
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/transcriber?schema=public
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/parle?schema=public
 ```
 
 ## Backend details

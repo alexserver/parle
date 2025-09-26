@@ -12,7 +12,7 @@ const getTimestamp = () => new Date().toISOString()
 
 const getLogFileName = () => {
   const today = new Date().toISOString().split('T')[0]
-  return path.join(logsDir, `transcriber-${today}.log`)
+  return path.join(logsDir, `parle-${today}.log`)
 }
 
 const writeLog = (level: string, message: string, data?: any) => {

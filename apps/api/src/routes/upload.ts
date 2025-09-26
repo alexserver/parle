@@ -6,16 +6,24 @@ import { transcribeAudio } from '../services/transcribe'
 import { summarizeTranscript } from '../services/summarize'
 import { UploadResponse } from '../types'
 import { logger } from '../services/logger'
+import { authMiddleware } from '../middleware/auth'
 
 const upload = new Hono()
 
+// Apply authentication middleware to all upload routes
+upload.use('*', authMiddleware)
+
 upload.post('/', async (c) => {
   try {
+    // Get authenticated user ID
+    const userId = c.get('userId')
+    const user = c.get('user')
+    
     const body = await c.req.parseBody()
     const audioFile = body.audio as File
 
     if (!audioFile) {
-      logger.warn('Upload rejected: No audio file provided')
+      logger.warn('Upload rejected: No audio file provided', { userId })
       return c.json({ error: 'No audio file provided' }, 400)
     }
 
@@ -55,6 +63,7 @@ upload.post('/', async (c) => {
 
     let conversation = await prisma.conversation.create({
       data: {
+        userId, // Associate conversation with authenticated user
         originalFilename: audioFile.name,
         storagePath,
         mimeType: audioFile.type,

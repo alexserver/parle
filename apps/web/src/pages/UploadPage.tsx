@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { uploadAudio, UploadResponse } from '../api'
 import { useTranscripts } from '../contexts/TranscriptContext'
 
@@ -10,6 +11,7 @@ const UploadPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const { refreshTranscripts } = useTranscripts()
+  const { token } = useAuth()
   const navigate = useNavigate()
 
   const validateFile = (selectedFile: File): string | null => {
@@ -84,11 +86,14 @@ const UploadPage = () => {
     setError(null)
     
     try {
-      const result = await uploadAudio(file)
+      console.log('🚀 Starting upload...')
+      console.log('🔐 Got token from auth context:', !!token)
+      const result = await uploadAudio(file, token)
       setUploadResult(result)
       // Refresh the transcripts list
       refreshTranscripts()
     } catch (err) {
+      console.error('❌ Upload error:', err)
       setError(err instanceof Error ? err.message : 'Upload failed')
     } finally {
       setIsUploading(false)

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { getTranscript, Conversation } from '../api'
 
 const TranscriptDetailPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { token } = useAuth()
   const [transcript, setTranscript] = useState<Conversation | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -19,7 +21,7 @@ const TranscriptDetailPage = () => {
       setIsLoading(true)
       setError(null)
       try {
-        const data = await getTranscript(id)
+        const data = await getTranscript(id, token)
         setTranscript(data)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load transcript')
@@ -29,7 +31,7 @@ const TranscriptDetailPage = () => {
     }
 
     fetchTranscript()
-  }, [id, navigate])
+  }, [id, navigate, token])
 
   const formatFileSize = (bytes: number) => {
     return (bytes / 1024 / 1024).toFixed(2) + ' MB'

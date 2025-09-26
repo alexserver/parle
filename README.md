@@ -21,7 +21,7 @@ A full-stack web application that transforms audio files (MP3/WAV) into text usi
 ## Project Structure
 
 ```
-transcriber/
+parle/
 ├── README.md
 ├── package.json               # Monorepo root with dev scripts
 ├── docker-compose.yml          # PostgreSQL database
@@ -64,7 +64,7 @@ transcriber/
 ### 1. Clone and Setup Environment
 
 ```bash
-cd transcriber
+cd parle
 cp apps/api/.env.example apps/api/.env
 ```
 
@@ -79,12 +79,12 @@ NODE_ENV=development
 OPENAI_API_KEY=sk-your-key-here
 
 # Database Configuration
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/transcriber?schema=public
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/parle?schema=public
 
 # PostgreSQL Docker Configuration (used by docker-compose.yml)
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
-POSTGRES_DB=transcriber
+POSTGRES_DB=parle
 ```
 
 ### 2. Start PostgreSQL Database
