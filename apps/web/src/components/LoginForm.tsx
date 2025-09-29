@@ -105,12 +105,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, redirectTo }) => {
             )}
           </button>
         </form>
-        
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Demo credentials: <span className="font-mono bg-gray-100 px-2 py-1 rounded">admin</span> / <span className="font-mono bg-gray-100 px-2 py-1 rounded">admin123</span>
-          </p>
-        </div>
       </div>
     </div>
   )
