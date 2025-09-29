@@ -31,6 +31,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [token, setToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
+  // Helper function to check if JWT token is expired
+  const isTokenExpired = (token: string): boolean => {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      const currentTime = Date.now() / 1000
+      return payload.exp < currentTime
+    } catch (error) {
+      console.error('Error parsing token:', error)
+      return true // Consider invalid tokens as expired
+    }
+  }
+
   // Load auth state from localStorage on app startup
   useEffect(() => {
     try {
@@ -38,8 +50,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const storedUser = localStorage.getItem(USER_KEY)
       
       if (storedToken && storedUser) {
-        setToken(storedToken)
-        setUser(JSON.parse(storedUser))
+        // Check if token is expired before setting auth state
+        if (isTokenExpired(storedToken)) {
+          console.log('🚫 Stored token is expired, clearing auth state')
+          localStorage.removeItem(TOKEN_KEY)
+          localStorage.removeItem(USER_KEY)
+        } else {
+          setToken(storedToken)
+          setUser(JSON.parse(storedUser))
+        }
       }
     } catch (error) {
       console.error('Error loading auth state from localStorage:', error)

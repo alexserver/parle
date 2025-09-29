@@ -44,8 +44,13 @@ async function handleApiResponse<T>(response: Response): Promise<T> {
   })
   
   if (response.status === 401) {
-    // Authentication failed - redirect to login
-    console.log('🚫 401 Unauthorized - redirecting to login')
+    // Authentication failed - clear auth state and redirect to login
+    console.log('🚫 401 Unauthorized - clearing auth state and redirecting to login')
+    
+    // Clear localStorage to prevent infinite refresh loop
+    localStorage.removeItem('parle-auth-token')
+    localStorage.removeItem('parle-auth-user')
+    
     window.location.href = '/login'
     throw new Error('Authentication required. Please sign in again.')
   }
