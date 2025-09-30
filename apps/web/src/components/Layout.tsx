@@ -1,5 +1,6 @@
 import { Link, useLocation, Outlet } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import parleLogo from '../assets/parle-logo.png'
 
 const Layout = () => {
   const location = useLocation()
@@ -26,7 +27,7 @@ const Layout = () => {
             <div className="flex items-center">
               <Link to="/dashboard" className="flex items-center space-x-3">
                 <img 
-                  src="/src/assets/parle-logo.png" 
+                  src={parleLogo} 
                   alt="Parle Logo" 
                   className="h-8 w-8" 
                 />
