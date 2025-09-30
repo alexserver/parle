@@ -1,19 +1,4 @@
-import fs from 'fs'
-import path from 'path'
-
-const logsDir = path.join(process.cwd(), 'logs')
-
-// Ensure logs directory exists
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir, { recursive: true })
-}
-
 const getTimestamp = () => new Date().toISOString()
-
-const getLogFileName = () => {
-  const today = new Date().toISOString().split('T')[0]
-  return path.join(logsDir, `parle-${today}.log`)
-}
 
 const writeLog = (level: string, message: string, data?: any) => {
   const timestamp = getTimestamp()
@@ -24,21 +9,17 @@ const writeLog = (level: string, message: string, data?: any) => {
     ...(data && { data })
   }
   
-  const logLine = JSON.stringify(logEntry) + '\n'
-  const logFile = getLogFileName()
-  
-  try {
-    fs.appendFileSync(logFile, logLine)
-  } catch (error) {
-    console.error('Failed to write to log file:', error)
-  }
-  
-  // Also log to console for development
-  const consoleMessage = `[${timestamp}] ${level.toUpperCase()}: ${message}`
-  if (data) {
-    console.log(consoleMessage, data)
+  // Use structured JSON logging for production (Fly.io can capture these)
+  if (process.env.NODE_ENV === 'production') {
+    console.log(JSON.stringify(logEntry))
   } else {
-    console.log(consoleMessage)
+    // Human-readable format for development
+    const consoleMessage = `[${timestamp}] ${level.toUpperCase()}: ${message}`
+    if (data) {
+      console.log(consoleMessage, data)
+    } else {
+      console.log(consoleMessage)
+    }
   }
 }
 

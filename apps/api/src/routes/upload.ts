@@ -5,7 +5,8 @@ import { prisma } from '../prisma'
 import { transcribeAudio } from '../services/transcribe'
 import { summarizeTranscript } from '../services/summarize'
 import { UploadResponse } from '../types'
-import { logger } from '../services/logger'
+// TODO: uncomment later
+// import { logger } from '../services/logger'
 import { authMiddleware } from '../middleware/auth'
 
 const upload = new Hono()
@@ -23,7 +24,8 @@ upload.post('/', async (c) => {
     const audioFile = body.audio as File
 
     if (!audioFile) {
-      logger.warn('Upload rejected: No audio file provided', { userId })
+      // TODO: uncomment later
+      // logger.warn('Upload rejected: No audio file provided', { userId })
       return c.json({ error: 'No audio file provided' }, 400)
     }
 
@@ -33,27 +35,32 @@ upload.post('/', async (c) => {
     const fileExtension = path.extname(audioFile.name)
     
     if (!allowedTypes.includes(audioFile.type) && !allowedExtensions.includes(fileExtension.toLowerCase())) {
-      logger.warn('Upload rejected: Invalid file type', { 
-        type: audioFile.type, 
-        filename: audioFile.name,
-        allowedTypes,
-        allowedExtensions
-      })
+      // TODO: uncomment later
+      // logger.warn('Upload rejected: Invalid file type', { 
+      //   type: audioFile.type, 
+      //   filename: audioFile.name,
+      //   allowedTypes,
+      //   allowedExtensions
+      // })
       return c.json({ error: 'Only MP3, MP4, and M4A files are supported' }, 400)
     }
 
     // Check file size (25MB limit for OpenAI Whisper)
     const maxSize = 25 * 1024 * 1024 // 25MB in bytes
     if (audioFile.size > maxSize) {
-      logger.warn('Upload rejected: File too large', { 
-        size: audioFile.size, 
-        maxSize, 
-        filename: audioFile.name 
-      })
+      // TODO: uncomment later
+      // logger.warn('Upload rejected: File too large', { 
+      //   size: audioFile.size, 
+      //   maxSize, 
+      //   filename: audioFile.name 
+      // })
       return c.json({ error: 'File size must be 25MB or less' }, 400)
     }
 
-    const uploadsDir = path.join(process.cwd(), 'uploads')
+    // Use mounted volume in production, local uploads in development
+    const uploadsDir = process.env.NODE_ENV === 'production' 
+      ? '/data/uploads' 
+      : path.join(process.cwd(), 'uploads')
     await fs.mkdir(uploadsDir, { recursive: true })
     const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}${fileExtension}`
     const storagePath = path.join(uploadsDir, filename)
@@ -72,11 +79,13 @@ upload.post('/', async (c) => {
       }
     })
 
-    logger.uploadStart(audioFile.name, audioFile.size, conversation.id)
-    logger.uploadSuccess(audioFile.name, conversation.id, storagePath)
+    // TODO: uncomment later
+    // logger.uploadStart(audioFile.name, audioFile.size, conversation.id)
+    // logger.uploadSuccess(audioFile.name, conversation.id, storagePath)
 
     try {
-      logger.transcriptionStart(conversation.id, storagePath)
+      // TODO: uncomment later
+      // logger.transcriptionStart(conversation.id, storagePath)
       const transcriptText = await transcribeAudio(storagePath, conversation.id)
       
       conversation = await prisma.conversation.update({
@@ -88,10 +97,12 @@ upload.post('/', async (c) => {
       })
 
       const isRealTranscription = !transcriptText.startsWith('[MOCK TRANSCRIPT')
-      logger.transcriptionSuccess(conversation.id, transcriptText.length, isRealTranscription)
+      // TODO: uncomment later
+      // logger.transcriptionSuccess(conversation.id, transcriptText.length, isRealTranscription)
 
       try {
-        logger.summarizationStart(conversation.id, transcriptText.length)
+        // TODO: uncomment later
+        // logger.summarizationStart(conversation.id, transcriptText.length)
         const summaryText = await summarizeTranscript(transcriptText, conversation.id)
         
         conversation = await prisma.conversation.update({
@@ -103,14 +114,17 @@ upload.post('/', async (c) => {
         })
 
         const isRealSummary = !summaryText.includes('TODO: This is a mock summary')
-        logger.summarizationSuccess(conversation.id, summaryText.length, isRealSummary)
+        // TODO: uncomment later
+        // logger.summarizationSuccess(conversation.id, summaryText.length, isRealSummary)
       } catch (summaryError) {
         const errorMessage = summaryError instanceof Error ? summaryError.message : 'Unknown summarization error'
-        logger.summarizationError(conversation.id, errorMessage)
+        // TODO: uncomment later
+        // logger.summarizationError(conversation.id, errorMessage)
       }
     } catch (transcribeError) {
       const errorMessage = transcribeError instanceof Error ? transcribeError.message : 'Unknown transcription error'
-      logger.transcriptionError(conversation.id, errorMessage)
+      // TODO: uncomment later
+      // logger.transcriptionError(conversation.id, errorMessage)
       await prisma.conversation.update({
         where: { id: conversation.id },
         data: {
@@ -131,7 +145,8 @@ upload.post('/', async (c) => {
 
     return c.json(response)
   } catch (error) {
-    logger.error('Upload error', { error: error instanceof Error ? error.message : 'Unknown error' })
+    // TODO: uncomment later
+    // logger.error('Upload error', { error: error instanceof Error ? error.message : 'Unknown error' })
     return c.json({ error: 'Upload failed' }, 500)
   }
 })
