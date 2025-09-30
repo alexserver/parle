@@ -53,7 +53,10 @@ upload.post('/', async (c) => {
       return c.json({ error: 'File size must be 25MB or less' }, 400)
     }
 
-    const uploadsDir = path.join(process.cwd(), 'uploads')
+    // Use mounted volume in production, local uploads in development
+    const uploadsDir = process.env.NODE_ENV === 'production' 
+      ? '/data/uploads' 
+      : path.join(process.cwd(), 'uploads')
     await fs.mkdir(uploadsDir, { recursive: true })
     const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}${fileExtension}`
     const storagePath = path.join(uploadsDir, filename)
