@@ -1,5 +1,6 @@
 import { Context, Next } from 'hono'
-import { logger } from '../services/logger'
+// TODO: uncomment later
+// import { logger } from '../services/logger'
 import { verifyToken, JWTPayload } from '../services/auth'
 import { getUserById } from '../services/user'
 import { User } from '@prisma/client'
@@ -22,7 +23,8 @@ export const authMiddleware = async (c: Context, next: Next) => {
     const authHeader = c.req.header('Authorization')
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      logger.warn('Authentication failed: Missing or invalid Authorization header')
+      // TODO: uncomment later
+      // logger.warn('Authentication failed: Missing or invalid Authorization header')
       return c.json({ error: 'Unauthorized: Missing or invalid token' }, 401)
     }
 
@@ -31,14 +33,16 @@ export const authMiddleware = async (c: Context, next: Next) => {
     // Verify JWT token
     const payload = verifyToken(token)
     if (!payload) {
-      logger.warn('Authentication failed: Invalid or expired token')
+      // TODO: uncomment later
+      // logger.warn('Authentication failed: Invalid or expired token')
       return c.json({ error: 'Unauthorized: Invalid or expired token' }, 401)
     }
 
     // Get fresh user data from database
     const user = await getUserById(payload.userId)
     if (!user) {
-      logger.warn('Authentication failed: User not found', { userId: payload.userId })
+      // TODO: uncomment later
+      // logger.warn('Authentication failed: User not found', { userId: payload.userId })
       return c.json({ error: 'Unauthorized: User not found' }, 401)
     }
 
@@ -47,19 +51,21 @@ export const authMiddleware = async (c: Context, next: Next) => {
     c.set('user', user)
     c.set('userPayload', payload)
 
-    logger.info('User authenticated successfully', { 
-      userId: user.id, 
-      username: user.username,
-      role: user.role 
-    })
+    // TODO: uncomment later
+    // logger.info('User authenticated successfully', { 
+    //   userId: user.id, 
+    //   username: user.username,
+    //   role: user.role 
+    // })
 
     // Continue to next middleware/handler
     await next()
 
   } catch (error) {
-    logger.error('Authentication middleware error', { 
-      error: error instanceof Error ? error.message : 'Unknown error'
-    })
+    // TODO: uncomment later
+    // logger.error('Authentication middleware error', { 
+    //   error: error instanceof Error ? error.message : 'Unknown error'
+    // })
     return c.json({ error: 'Authentication failed' }, 401)
   }
 }
@@ -82,16 +88,18 @@ export const optionalAuthMiddleware = async (c: Context, next: Next) => {
           c.set('userId', user.id)
           c.set('user', user)
           c.set('userPayload', payload)
-          logger.info('Optional auth: User authenticated', { userId: user.id })
+          // TODO: uncomment later
+          // logger.info('Optional auth: User authenticated', { userId: user.id })
         }
       }
     }
 
     await next()
   } catch (error) {
-    logger.warn('Optional auth middleware error', { 
-      error: error instanceof Error ? error.message : 'Unknown error'
-    })
+    // TODO: uncomment later
+    // logger.warn('Optional auth middleware error', { 
+    //   error: error instanceof Error ? error.message : 'Unknown error'
+    // })
     await next()
   }
 }

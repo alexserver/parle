@@ -20,6 +20,16 @@ const corsConfig = {
   credentials: false,
 }
 
+// Root route for status check (no CORS)
+app.get('/', (c) => {
+  return c.json({
+    service: 'Parle API',
+    version: '1.0.0',
+    status: 'running',
+    timestamp: new Date().toISOString()
+  })
+})
+
 app.use('/*', cors(corsConfig))
 app.use('/*', secureHeaders())
 
