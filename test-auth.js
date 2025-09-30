@@ -73,7 +73,7 @@ async function runSecurityTests() {
   console.log('   - Protected endpoints require authentication ✅');
   console.log('   - Invalid requests handled properly ✅');
   console.log('\n🔐 Next steps:');
-  console.log('   1. Test with valid Clerk JWT tokens');
+  console.log('   1. Test with valid JWT tokens');
   console.log('   2. Test data isolation between users');
   console.log('   3. Run full authentication flow tests');
 }

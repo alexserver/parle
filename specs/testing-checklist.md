@@ -1,4 +1,4 @@
-# Clerk Authentication Testing Checklist
+# Authentication Testing Checklist
 
 ## Phase 6: Testing & Security Validation
 
@@ -8,7 +8,7 @@
 - [ ] **New User Registration**
   - [ ] Visit landing page at `/`
   - [ ] Click "Get Started" button
-  - [ ] Complete Clerk sign-up flow
+  - [ ] Complete sign-up flow
   - [ ] Verify redirect to `/dashboard` after successful registration
   - [ ] Confirm welcome message displays user's name
   - [ ] Check that user stats show 0 transcripts initially
@@ -17,7 +17,7 @@
 - [ ] **Existing User Login**
   - [ ] Visit landing page at `/`
   - [ ] Click "Sign In" button
-  - [ ] Complete Clerk sign-in flow
+  - [ ] Complete sign-in flow
   - [ ] Verify redirect to `/dashboard` after successful login
   - [ ] Confirm user's existing transcripts are displayed
   - [ ] Check user stats reflect actual transcript counts
@@ -84,7 +84,7 @@
 - [ ] **JWT Token Security**
   - [ ] Test API calls with invalid/expired token → Should return 401
   - [ ] Test API calls with malformed token → Should return 401
-  - [ ] Verify proper JWT signature validation by Clerk
+  - [ ] Verify proper JWT signature validation
   - [ ] Test token refresh scenarios
 
 #### Request Validation
@@ -99,7 +99,7 @@
 #### Authentication Errors
 - [ ] **Auth Failure Scenarios**
   - [ ] Network errors during token fetch
-  - [ ] Clerk service unavailable
+  - [ ] Authentication service unavailable
   - [ ] Token refresh failures
   - [ ] Verify user-friendly error messages
   - [ ] Test error recovery flows
@@ -130,7 +130,7 @@
 #### Session Expiration
 - [ ] **Token Lifecycle**
   - [ ] Test behavior when JWT expires
-  - [ ] Verify automatic token refresh by Clerk
+  - [ ] Verify automatic token refresh
   - [ ] Test logout after extended inactivity
   - [ ] Confirm redirect to sign-in when session expires
 
@@ -201,7 +201,7 @@
 - [ ] No hardcoded secrets in client code
 - [ ] Environment variables properly configured
 - [ ] HTTPS enforced in production
-- [ ] Clerk configuration follows best practices
+- [ ] Authentication configuration follows best practices
 - [ ] User permissions properly scoped
 
 ### Data Security Audit  
