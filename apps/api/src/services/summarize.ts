@@ -1,6 +1,5 @@
 import OpenAI from 'openai'
-// TODO: uncomment later
-// import { logger } from './logger'
+import { logger } from './logger'
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -8,16 +7,14 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
 
 export async function summarizeTranscript(text: string, conversationId: string): Promise<string> {
   if (!openai) {
-    // TODO: uncomment later
-    // logger.info('Using mock summarization service', { conversationId, reason: 'no_openai_key' })
+    logger.info('Using mock summarization service', { conversationId, reason: 'no_openai_key' })
     const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0)
     const firstSentences = sentences.slice(0, 3).join('. ')
     return `${firstSentences}... TODO: This is a mock summary because no OpenAI API key was provided.`
   }
 
   try {
-    // TODO: uncomment later
-    // logger.openaiRequest(conversationId, 'gpt-3.5-turbo', 'summarization')
+    logger.openaiRequest(conversationId, 'gpt-3.5-turbo', 'summarization')
     const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [

@@ -1,6 +1,5 @@
 import { Context, Next } from 'hono'
-// TODO: uncomment later
-// import { logger } from '../services/logger'
+import { logger } from '../services/logger'
 import { verifyToken, JWTPayload } from '../services/auth'
 import { getUserById } from '../services/user'
 import { User } from '@prisma/client'
@@ -17,14 +16,13 @@ declare module 'hono' {
 /**
  * JWT-based auth middleware - validates JWT token and sets user context
  */
-export const authMiddleware = async (c: Context, next: Next) => {
+export const authMiddleware = async (c: Context, next: Next): Promise<Response | void> => {
   try {
     // Extract token from Authorization header
     const authHeader = c.req.header('Authorization')
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      // TODO: uncomment later
-      // logger.warn('Authentication failed: Missing or invalid Authorization header')
+      logger.warn('Authentication failed: Missing or invalid Authorization header')
       return c.json({ error: 'Unauthorized: Missing or invalid token' }, 401)
     }
 
@@ -33,16 +31,14 @@ export const authMiddleware = async (c: Context, next: Next) => {
     // Verify JWT token
     const payload = verifyToken(token)
     if (!payload) {
-      // TODO: uncomment later
-      // logger.warn('Authentication failed: Invalid or expired token')
+      logger.warn('Authentication failed: Invalid or expired token')
       return c.json({ error: 'Unauthorized: Invalid or expired token' }, 401)
     }
 
     // Get fresh user data from database
     const user = await getUserById(payload.userId)
     if (!user) {
-      // TODO: uncomment later
-      // logger.warn('Authentication failed: User not found', { userId: payload.userId })
+      logger.warn('Authentication failed: User not found', { userId: payload.userId })
       return c.json({ error: 'Unauthorized: User not found' }, 401)
     }
 
@@ -51,21 +47,19 @@ export const authMiddleware = async (c: Context, next: Next) => {
     c.set('user', user)
     c.set('userPayload', payload)
 
-    // TODO: uncomment later
-    // logger.info('User authenticated successfully', { 
-    //   userId: user.id, 
-    //   username: user.username,
-    //   role: user.role 
-    // })
+    logger.info('User authenticated successfully', { 
+      userId: user.id, 
+      username: user.username,
+      role: user.role 
+    })
 
     // Continue to next middleware/handler
     await next()
 
   } catch (error) {
-    // TODO: uncomment later
-    // logger.error('Authentication middleware error', { 
-    //   error: error instanceof Error ? error.message : 'Unknown error'
-    // })
+    logger.error('Authentication middleware error', { 
+      error: error instanceof Error ? error.message : 'Unknown error'
+    })
     return c.json({ error: 'Authentication failed' }, 401)
   }
 }
@@ -74,7 +68,7 @@ export const authMiddleware = async (c: Context, next: Next) => {
  * Optional middleware - allows both authenticated and unauthenticated requests
  * Sets user context if valid token is provided
  */
-export const optionalAuthMiddleware = async (c: Context, next: Next) => {
+export const optionalAuthMiddleware = async (c: Context, next: Next): Promise<void> => {
   try {
     const authHeader = c.req.header('Authorization')
     
@@ -88,18 +82,16 @@ export const optionalAuthMiddleware = async (c: Context, next: Next) => {
           c.set('userId', user.id)
           c.set('user', user)
           c.set('userPayload', payload)
-          // TODO: uncomment later
-          // logger.info('Optional auth: User authenticated', { userId: user.id })
+          logger.info('Optional auth: User authenticated', { userId: user.id })
         }
       }
     }
 
     await next()
   } catch (error) {
-    // TODO: uncomment later
-    // logger.warn('Optional auth middleware error', { 
-    //   error: error instanceof Error ? error.message : 'Unknown error'
-    // })
+    logger.warn('Optional auth middleware error', { 
+      error: error instanceof Error ? error.message : 'Unknown error'
+    })
     await next()
   }
 }

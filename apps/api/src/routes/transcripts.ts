@@ -1,7 +1,6 @@
 import { Hono } from 'hono'
 import { prisma } from '../prisma'
-// TODO: uncomment later
-// import { logger } from '../services/logger'
+import { logger } from '../services/logger'
 import { authMiddleware } from '../middleware/auth'
 
 const transcripts = new Hono()
@@ -22,16 +21,14 @@ transcripts.get('/', async (c) => {
       }
     })
 
-    // TODO: uncomment later
-    // logger.info('Retrieved user transcripts', { userId, count: conversations.length })
+    logger.info('Retrieved user transcripts', { userId, count: conversations.length })
     return c.json(conversations)
   } catch (error) {
     const userId = c.get('userId')
-    // TODO: uncomment later
-    // logger.error('Failed to get user transcripts', { 
-    //   userId,
-    //   error: error instanceof Error ? error.message : 'Unknown error' 
-    // })
+    logger.error('Failed to get user transcripts', { 
+      userId,
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    })
     return c.json({ error: 'Failed to get transcripts' }, 500)
   }
 })
@@ -49,23 +46,20 @@ transcripts.get('/:id', async (c) => {
     })
 
     if (!conversation) {
-      // TODO: uncomment later
-      // logger.warn('Transcript access denied or not found', { userId, transcriptId: id })
+      logger.warn('Transcript access denied or not found', { userId, transcriptId: id })
       return c.json({ error: 'Transcript not found' }, 404)
     }
 
-    // TODO: uncomment later
-    // logger.info('Retrieved transcript', { userId, transcriptId: id })
+    logger.info('Retrieved transcript', { userId, transcriptId: id })
     return c.json(conversation)
   } catch (error) {
     const userId = c.get('userId')
     const transcriptId = c.req.param('id')
-    // TODO: uncomment later
-    // logger.error('Get transcript error', { 
-    //   userId,
-    //   transcriptId,
-    //   error: error instanceof Error ? error.message : 'Unknown error' 
-    // })
+    logger.error('Get transcript error', { 
+      userId,
+      transcriptId,
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    })
     return c.json({ error: 'Failed to get transcript' }, 500)
   }
 })

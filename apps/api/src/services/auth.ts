@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
-import { User } from '@prisma/client'
 import { prisma } from '../prisma'
 
 export interface AuthUser {
