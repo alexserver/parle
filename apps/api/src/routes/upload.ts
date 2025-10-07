@@ -1,10 +1,10 @@
 import { Hono } from 'hono'
-import fs from 'fs/promises'
 import path from 'path'
 import { prisma } from '../prisma'
 import { transcribeAudio } from '../services/transcribe'
 import { summarizeTranscript } from '../services/summarize'
 import { UploadResponse } from '../types'
+import { StorageFactory } from '../services/storage/StorageFactory'
 // TODO: uncomment later
 // import { logger } from '../services/logger'
 import { authMiddleware } from '../middleware/auth'
@@ -57,36 +57,41 @@ upload.post('/', async (c) => {
       return c.json({ error: 'File size must be 25MB or less' }, 400)
     }
 
-    // Use mounted volume in production, local uploads in development
-    const uploadsDir = process.env.NODE_ENV === 'production' 
-      ? '/data/uploads' 
-      : path.join(process.cwd(), 'uploads')
-    await fs.mkdir(uploadsDir, { recursive: true })
-    const filename = `${Date.now()}-${Math.random().toString(36).substring(7)}${fileExtension}`
-    const storagePath = path.join(uploadsDir, filename)
-
-    const arrayBuffer = await audioFile.arrayBuffer()
-    await fs.writeFile(storagePath, Buffer.from(arrayBuffer))
-
+    // Create conversation record first to get ID
     let conversation = await prisma.conversation.create({
       data: {
         userId, // Associate conversation with authenticated user
         originalFilename: audioFile.name,
-        storagePath,
+        storagePath: '', // Temporary, will be updated after upload
         mimeType: audioFile.type,
         sizeBytes: audioFile.size,
         status: 'initial'
       }
     })
 
+    // Generate object key with user-based path
+    const objectKey = `uploads/user/${userId}/${conversation.id}${fileExtension}`
+    
+    // Upload to R2 instead of local storage
+    const storageService = StorageFactory.createStorageService()
+    const uploadResult = await storageService.uploadFile(audioFile, objectKey)
+
+    // Update conversation with R2 key
+    conversation = await prisma.conversation.update({
+      where: { id: conversation.id },
+      data: {
+        storagePath: uploadResult.key // Store R2 key instead of local path
+      }
+    })
+
     // TODO: uncomment later
     // logger.uploadStart(audioFile.name, audioFile.size, conversation.id)
-    // logger.uploadSuccess(audioFile.name, conversation.id, storagePath)
+    // logger.uploadSuccess(audioFile.name, conversation.id, uploadResult.key)
 
     try {
       // TODO: uncomment later
-      // logger.transcriptionStart(conversation.id, storagePath)
-      const transcriptText = await transcribeAudio(storagePath, conversation.id)
+      // logger.transcriptionStart(conversation.id, uploadResult.key)
+      const transcriptText = await transcribeAudio(uploadResult.key, conversation.id)
       
       conversation = await prisma.conversation.update({
         where: { id: conversation.id },
