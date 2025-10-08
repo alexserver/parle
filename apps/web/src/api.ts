@@ -142,3 +142,36 @@ export async function getTranscript(id: string, token: string | null): Promise<C
     throw new Error('Failed to get transcript. Please try again.')
   }
 }
+
+export async function deleteConversation(id: string, token: string | null): Promise<void> {
+  try {
+    console.log('🗑️ Delete conversation - ID:', id, 'Token present:', !!token)
+    
+    const headers = createAuthHeaders(token)
+    console.log('🔐 Delete conversation - Headers:', headers)
+
+    const url = `${API_BASE_URL}/transcripts/${id}`
+    console.log('🌐 Making DELETE request to:', url)
+    
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers
+    })
+    
+    console.log('📡 Delete conversation - Response status:', response.status)
+    
+    if (response.status === 204) {
+      console.log('✅ Conversation deleted successfully')
+      return
+    }
+
+    // Handle non-204 responses
+    await handleApiResponse<void>(response)
+  } catch (error) {
+    console.error('❌ Delete conversation - Error:', error)
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Failed to delete conversation. Please try again.')
+  }
+}
