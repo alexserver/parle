@@ -1,6 +1,6 @@
 const getTimestamp = () => new Date().toISOString()
 
-const writeLog = (level: string, message: string, data?: any) => {
+const writeLog = (level: string, message: string, data?: Record<string, unknown>) => {
   const timestamp = getTimestamp()
   const logEntry = {
     timestamp,
@@ -24,9 +24,9 @@ const writeLog = (level: string, message: string, data?: any) => {
 }
 
 export const logger = {
-  info: (message: string, data?: any) => writeLog('info', message, data),
-  warn: (message: string, data?: any) => writeLog('warn', message, data),
-  error: (message: string, data?: any) => writeLog('error', message, data),
+  info: (message: string, data?: Record<string, unknown>) => writeLog('info', message, data),
+  warn: (message: string, data?: Record<string, unknown>) => writeLog('warn', message, data),
+  error: (message: string, data?: Record<string, unknown>) => writeLog('error', message, data),
   
   // Specific logging methods for our use cases
   uploadStart: (filename: string, fileSize: number, conversationId: string) => {
