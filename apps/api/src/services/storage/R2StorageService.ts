@@ -48,13 +48,24 @@ export class R2StorageService implements StorageService {
       'R2_ACCOUNT_ID',
       'R2_ACCESS_KEY_ID', 
       'R2_SECRET_ACCESS_KEY',
-      'R2_BUCKET_NAME'
+      'R2_BUCKET_NAME',
+      'R2_REGION'
     ]
 
     const missingVars = requiredEnvVars.filter(varName => !process.env[varName])
     
     if (missingVars.length > 0) {
-      logger.error('Missing required R2 environment variables', { missingVars })
+      logger.error('Missing required R2 environment variables', { 
+        missingVars,
+        totalRequired: requiredEnvVars.length,
+        totalMissing: missingVars.length,
+        allRequired: requiredEnvVars
+      })
+      
+      missingVars.forEach(varName => {
+        logger.error(`Missing environment variable: ${varName}`)
+      })
+      
       throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`)
     }
     
