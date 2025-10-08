@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import path from 'path'
 import { prisma } from '../prisma'
 import { logger } from '../services/logger'
 import { authMiddleware } from '../middleware/auth'
@@ -303,6 +304,202 @@ transcripts.put('/:id/regenerate-summary', async (c) => {
       error: error instanceof Error ? error.message : 'Unknown error' 
     })
     return c.json({ error: 'Failed to regenerate summary' }, 500)
+  }
+})
+
+transcripts.post('/:id/re-upload', async (c) => {
+  try {
+    const id = c.req.param('id')
+    const userId = c.get('userId')
+    
+    logger.info('Re-upload request', { userId, conversationId: id })
+    
+    // Find the conversation and verify ownership
+    const conversation = await prisma.conversation.findFirst({
+      where: { 
+        id,
+        userId // Ensure user can only re-upload their own conversations
+      }
+    })
+
+    if (!conversation) {
+      logger.warn('Re-upload attempt - conversation not found or access denied', { userId, conversationId: id })
+      return c.json({ error: 'Conversation not found' }, 404)
+    }
+
+    // Verify conversation is in failed upload state (status='initial' and no storagePath)
+    if (conversation.status !== 'initial' || (conversation.storagePath && conversation.storagePath.trim() !== '')) {
+      logger.warn('Re-upload attempt - conversation not in failed upload state', { 
+        userId, 
+        conversationId: id, 
+        status: conversation.status, 
+        hasStoragePath: !!conversation.storagePath 
+      })
+      return c.json({ error: 'Conversation is not in a failed upload state' }, 400)
+    }
+
+    // Parse the uploaded file
+    const body = await c.req.parseBody()
+    const audioFile = body.audio as File
+
+    if (!audioFile) {
+      logger.warn('Re-upload rejected: No audio file provided', { userId, conversationId: id })
+      return c.json({ error: 'No audio file provided' }, 400)
+    }
+
+    // Validate file type and size (reuse validation logic from upload route)
+    const allowedTypes = ['audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'video/mp4']
+    const allowedExtensions = ['.mp3', '.mp4', '.m4a']
+    const fileExtension = path.extname(audioFile.name)
+    
+    if (!allowedTypes.includes(audioFile.type) && !allowedExtensions.includes(fileExtension.toLowerCase())) {
+      logger.warn('Re-upload rejected: Invalid file type', { 
+        userId,
+        conversationId: id,
+        type: audioFile.type, 
+        filename: audioFile.name,
+        allowedTypes,
+        allowedExtensions
+      })
+      return c.json({ error: 'Only MP3, MP4, and M4A files are supported' }, 400)
+    }
+
+    // Check file size (25MB limit for OpenAI Whisper)
+    const maxSize = 25 * 1024 * 1024 // 25MB in bytes
+    if (audioFile.size > maxSize) {
+      logger.warn('Re-upload rejected: File too large', { 
+        userId,
+        conversationId: id,
+        size: audioFile.size, 
+        maxSize, 
+        filename: audioFile.name 
+      })
+      return c.json({ error: 'File size must be 25MB or less' }, 400)
+    }
+
+    // Generate new object key for R2 storage
+    const objectKey = `uploads/user/${userId}/${id}${fileExtension}`
+    
+    // Upload file to R2 storage
+    const storageService = StorageFactory.createStorageService()
+    const uploadResult = await storageService.uploadFile(audioFile, objectKey)
+
+    // Update conversation with file metadata and storage path
+    let updatedConversation = await prisma.conversation.update({
+      where: { id },
+      data: {
+        originalFilename: audioFile.name,
+        storagePath: uploadResult.key,
+        mimeType: audioFile.type,
+        sizeBytes: audioFile.size,
+        errorMessage: null, // Clear any previous error messages
+        updatedAt: new Date()
+      }
+    })
+
+    logger.info('File re-uploaded successfully', { 
+      userId, 
+      conversationId: id, 
+      filename: audioFile.name,
+      size: audioFile.size,
+      storageKey: uploadResult.key 
+    })
+
+    try {
+      // Start transcription process
+      logger.info('Starting transcription for re-uploaded file', { userId, conversationId: id })
+      const transcriptText = await transcribeAudio(uploadResult.key, id)
+      
+      // Update conversation with transcript
+      updatedConversation = await prisma.conversation.update({
+        where: { id },
+        data: {
+          transcriptText,
+          status: 'transcribed',
+          updatedAt: new Date()
+        }
+      })
+
+      const isRealTranscription = !transcriptText.startsWith('[MOCK TRANSCRIPT')
+      logger.info('Transcription completed for re-uploaded file', { 
+        userId, 
+        conversationId: id, 
+        transcriptLength: transcriptText.length,
+        isRealTranscription 
+      })
+
+      try {
+        // Start summarization process
+        logger.info('Starting summarization for re-uploaded file', { userId, conversationId: id })
+        const summaryText = await summarizeTranscript(transcriptText, id)
+        
+        // Update conversation with summary
+        updatedConversation = await prisma.conversation.update({
+          where: { id },
+          data: {
+            summaryText,
+            status: 'summarized',
+            updatedAt: new Date()
+          }
+        })
+
+        const isRealSummary = !summaryText.includes('TODO: This is a mock summary')
+        logger.info('Summarization completed for re-uploaded file', { 
+          userId, 
+          conversationId: id, 
+          summaryLength: summaryText.length,
+          isRealSummary 
+        })
+        
+      } catch (summaryError) {
+        const errorMessage = summaryError instanceof Error ? summaryError.message : 'Unknown summarization error'
+        logger.error('Summarization failed for re-uploaded file', {
+          userId,
+          conversationId: id,
+          error: errorMessage
+        })
+        // Note: Don't update status to failed since transcription succeeded
+      }
+      
+    } catch (transcribeError) {
+      const errorMessage = transcribeError instanceof Error ? transcribeError.message : 'Unknown transcription error'
+      logger.error('Transcription failed for re-uploaded file', {
+        userId,
+        conversationId: id,
+        storageKey: uploadResult.key,
+        error: errorMessage
+      })
+      
+      // Update conversation with error status
+      await prisma.conversation.update({
+        where: { id },
+        data: {
+          status: 'failed',
+          errorMessage: `Transcription failed: ${errorMessage}`,
+          updatedAt: new Date()
+        }
+      })
+      
+      return c.json({ error: 'File uploaded successfully but transcription failed' }, 422)
+    }
+
+    logger.info('Re-upload process completed successfully', { 
+      userId, 
+      conversationId: id, 
+      finalStatus: updatedConversation.status 
+    })
+    
+    return c.json(updatedConversation)
+    
+  } catch (error) {
+    const userId = c.get('userId')
+    const conversationId = c.req.param('id')
+    logger.error('Re-upload error', { 
+      userId,
+      conversationId,
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    })
+    return c.json({ error: 'Re-upload failed' }, 500)
   }
 })
 

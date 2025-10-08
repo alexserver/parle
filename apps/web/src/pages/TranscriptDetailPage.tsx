@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTranscripts } from '../contexts/TranscriptContext'
-import { getTranscript, regenerateTranscript, regenerateSummary, Conversation } from '../api'
+import { getTranscript, regenerateTranscript, regenerateSummary, reUploadAudio, Conversation } from '../api'
 import ConfirmationDialog from '../components/ConfirmationDialog'
 
 const TranscriptDetailPage = () => {
@@ -19,6 +19,9 @@ const TranscriptDetailPage = () => {
   const [isRegeneratingSummary, setIsRegeneratingSummary] = useState(false)
   const [regenerationError, setRegenerationError] = useState<string | null>(null)
   const [showTranscriptRegenWarning, setShowTranscriptRegenWarning] = useState(false)
+  const [isReUploading, setIsReUploading] = useState(false)
+  const [reUploadError, setReUploadError] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   useEffect(() => {
     if (!id) {
@@ -125,6 +128,40 @@ const TranscriptDetailPage = () => {
 
   const handleTranscriptRegenCancel = () => {
     setShowTranscriptRegenWarning(false)
+  }
+
+  // Check if conversation is in failed upload state
+  const isFailedUpload = (conversation: Conversation) => {
+    return conversation.status === 'initial' && (!conversation.storagePath || conversation.storagePath.trim() === '')
+  }
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setSelectedFile(file)
+      setReUploadError(null)
+    }
+  }
+
+  const handleReUpload = async () => {
+    if (!selectedFile || !transcript || !id) return
+    
+    setIsReUploading(true)
+    setReUploadError(null)
+    
+    try {
+      console.log('🔄 Starting re-upload for:', id, 'with file:', selectedFile.name)
+      const updatedConversation = await reUploadAudio(id, selectedFile, token)
+      setTranscript(updatedConversation)
+      setSelectedFile(null)
+      console.log('✅ Re-upload completed successfully')
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to re-upload file'
+      setReUploadError(errorMessage)
+      console.error('❌ Re-upload failed:', error)
+    } finally {
+      setIsReUploading(false)
+    }
   }
 
   const handleRegenerateSummary = async () => {
@@ -317,6 +354,113 @@ const TranscriptDetailPage = () => {
               >
                 Dismiss
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Re-upload Error Display */}
+      {reUploadError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Re-upload Error</h3>
+              <p className="mt-1 text-sm text-red-700">{reUploadError}</p>
+              <button
+                onClick={() => setReUploadError(null)}
+                className="mt-2 text-sm text-red-600 hover:text-red-500 underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Re-upload Section for Failed Uploads */}
+      {isFailedUpload(transcript) && (
+        <div className="bg-white rounded-lg shadow-md p-6 border-l-4 border-yellow-400">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div className="ml-3 flex-1">
+              <h3 className="text-lg font-medium text-yellow-800 mb-2">Upload Failed</h3>
+              <p className="text-sm text-yellow-700 mb-4">
+                The audio file was not successfully uploaded. You can select a new file to retry the upload process.
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="audio-file" className="block text-sm font-medium text-gray-700 mb-2">
+                    Select Audio File
+                  </label>
+                  <input
+                    id="audio-file"
+                    name="audio-file"
+                    type="file"
+                    accept=".mp3,.mp4,.m4a,audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,video/mp4"
+                    onChange={handleFileSelect}
+                    disabled={isReUploading}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Supported formats: MP3, MP4, M4A (max 25MB)
+                  </p>
+                </div>
+                
+                {selectedFile && (
+                  <div className="bg-blue-50 rounded-lg p-3">
+                    <div className="flex items-center">
+                      <svg className="h-4 w-4 text-blue-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                      </svg>
+                      <span className="text-sm text-blue-700 font-medium">{selectedFile.name}</span>
+                      <span className="text-xs text-blue-600 ml-2">
+                        ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                      </span>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex space-x-3">
+                  <button
+                    onClick={handleReUpload}
+                    disabled={!selectedFile || isReUploading}
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isReUploading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Re-uploading...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        Re-upload File
+                      </>
+                    )}
+                  </button>
+                  
+                  {selectedFile && !isReUploading && (
+                    <button
+                      onClick={() => setSelectedFile(null)}
+                      className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

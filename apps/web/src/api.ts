@@ -229,3 +229,34 @@ export async function regenerateSummary(id: string, token: string | null): Promi
     throw new Error('Failed to regenerate summary. Please try again.')
   }
 }
+
+export async function reUploadAudio(id: string, file: File, token: string | null): Promise<Conversation> {
+  try {
+    console.log('🔄 Re-upload audio - ID:', id, 'File:', file.name, 'Token present:', !!token)
+    
+    const formData = new FormData()
+    formData.append('audio', file)
+    
+    const headers = createAuthHeaders(token)
+    console.log('🔐 Re-upload audio - Headers:', headers)
+
+    const url = `${API_BASE_URL}/transcripts/${id}/re-upload`
+    console.log('🌐 Making POST request to:', url)
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData
+    })
+    
+    console.log('📡 Re-upload audio - Response status:', response.status)
+
+    return handleApiResponse<Conversation>(response)
+  } catch (error) {
+    console.error('❌ Re-upload audio - Error:', error)
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Failed to re-upload audio. Please try again.')
+  }
+}
