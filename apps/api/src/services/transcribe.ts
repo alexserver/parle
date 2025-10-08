@@ -1,9 +1,7 @@
 import OpenAI from 'openai'
-import fs from 'fs'
 import path from 'path'
 import { StorageFactory } from './storage/StorageFactory'
-// TODO: uncomment later
-// import { logger } from './logger'
+import { logger } from './logger'
 
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
@@ -12,14 +10,12 @@ const openai = process.env.OPENAI_API_KEY ? new OpenAI({
 export async function transcribeAudio(storageKey: string, conversationId: string): Promise<string> {
   if (!openai) {
     const filename = path.basename(storageKey)
-    // TODO: uncomment later
-    // logger.info('Using mock transcription service', { conversationId, filename, reason: 'no_openai_key' })
+    logger.info('Using mock transcription service', { conversationId, filename, reason: 'no_openai_key' })
     return `[MOCK TRANSCRIPT for ${filename}] This is a mock transcription because no OpenAI API key was provided. The audio would have been transcribed here.`
   }
 
   try {
-    // TODO: uncomment later
-    // logger.openaiRequest(conversationId, 'whisper-1', 'transcription')
+    logger.openaiRequest(conversationId, 'whisper-1', 'transcription')
     
     // Get presigned URL for R2 file access
     const storageService = StorageFactory.createStorageService()

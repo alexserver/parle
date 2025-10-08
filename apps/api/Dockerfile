@@ -51,10 +51,8 @@ RUN addgroup --system --gid 1001 nodejs || true && \
 # Copy built application
 COPY --from=build /app /app
 
-# Create data directory and set permissions for mounted volume
-RUN mkdir -p /data && \
-    chown -R bun:bun /app /data && \
-    chmod -R 755 /data
+# Set permissions for app directory
+RUN chown -R bun:bun /app
 
 # Switch to non-root user
 USER bun
