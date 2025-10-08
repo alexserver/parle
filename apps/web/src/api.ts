@@ -175,3 +175,57 @@ export async function deleteConversation(id: string, token: string | null): Prom
     throw new Error('Failed to delete conversation. Please try again.')
   }
 }
+
+export async function regenerateTranscript(id: string, token: string | null): Promise<Conversation> {
+  try {
+    console.log('🔄 Regenerate transcript - ID:', id, 'Token present:', !!token)
+    
+    const headers = createAuthHeaders(token)
+    console.log('🔐 Regenerate transcript - Headers:', headers)
+
+    const url = `${API_BASE_URL}/transcripts/${id}/regenerate-transcript`
+    console.log('🌐 Making PUT request to:', url)
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers
+    })
+    
+    console.log('📡 Regenerate transcript - Response status:', response.status)
+
+    return handleApiResponse<Conversation>(response)
+  } catch (error) {
+    console.error('❌ Regenerate transcript - Error:', error)
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Failed to regenerate transcript. Please try again.')
+  }
+}
+
+export async function regenerateSummary(id: string, token: string | null): Promise<Conversation> {
+  try {
+    console.log('🔄 Regenerate summary - ID:', id, 'Token present:', !!token)
+    
+    const headers = createAuthHeaders(token)
+    console.log('🔐 Regenerate summary - Headers:', headers)
+
+    const url = `${API_BASE_URL}/transcripts/${id}/regenerate-summary`
+    console.log('🌐 Making PUT request to:', url)
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers
+    })
+    
+    console.log('📡 Regenerate summary - Response status:', response.status)
+
+    return handleApiResponse<Conversation>(response)
+  } catch (error) {
+    console.error('❌ Regenerate summary - Error:', error)
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Failed to regenerate summary. Please try again.')
+  }
+}

@@ -15,7 +15,7 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
 
 const corsConfig = {
   origin: allowedOrigins,
-  allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   credentials: false,
 }

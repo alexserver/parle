@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTranscripts } from '../contexts/TranscriptContext'
-import { getTranscript, Conversation } from '../api'
+import { getTranscript, regenerateTranscript, regenerateSummary, Conversation } from '../api'
+import ConfirmationDialog from '../components/ConfirmationDialog'
 
 const TranscriptDetailPage = () => {
   const { id } = useParams<{ id: string }>()
@@ -14,6 +15,10 @@ const TranscriptDetailPage = () => {
   const [error, setError] = useState<string | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, filename: string } | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isRegeneratingTranscript, setIsRegeneratingTranscript] = useState(false)
+  const [isRegeneratingSummary, setIsRegeneratingSummary] = useState(false)
+  const [regenerationError, setRegenerationError] = useState<string | null>(null)
+  const [showTranscriptRegenWarning, setShowTranscriptRegenWarning] = useState(false)
 
   useEffect(() => {
     if (!id) {
@@ -82,6 +87,64 @@ const TranscriptDetailPage = () => {
 
   const handleDeleteCancel = () => {
     setDeleteConfirm(null)
+  }
+
+  const handleRegenerateTranscript = async () => {
+    if (!transcript || !id) return
+    
+    // Show warning modal if summary exists
+    if (transcript.summaryText && transcript.summaryText.trim().length > 0) {
+      setShowTranscriptRegenWarning(true)
+      return
+    }
+    
+    // If no summary, proceed directly
+    performTranscriptRegeneration()
+  }
+
+  const performTranscriptRegeneration = async () => {
+    if (!transcript || !id) return
+    
+    setShowTranscriptRegenWarning(false)
+    setIsRegeneratingTranscript(true)
+    setRegenerationError(null)
+    
+    try {
+      console.log('🔄 Starting transcript regeneration for:', id)
+      const updatedConversation = await regenerateTranscript(id, token)
+      setTranscript(updatedConversation)
+      console.log('✅ Transcript regenerated successfully')
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to regenerate transcript'
+      setRegenerationError(errorMessage)
+      console.error('❌ Transcript regeneration failed:', error)
+    } finally {
+      setIsRegeneratingTranscript(false)
+    }
+  }
+
+  const handleTranscriptRegenCancel = () => {
+    setShowTranscriptRegenWarning(false)
+  }
+
+  const handleRegenerateSummary = async () => {
+    if (!transcript || !id) return
+    
+    setIsRegeneratingSummary(true)
+    setRegenerationError(null)
+    
+    try {
+      console.log('🔄 Starting summary regeneration for:', id)
+      const updatedConversation = await regenerateSummary(id, token)
+      setTranscript(updatedConversation)
+      console.log('✅ Summary regenerated successfully')
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to regenerate summary'
+      setRegenerationError(errorMessage)
+      console.error('❌ Summary regeneration failed:', error)
+    } finally {
+      setIsRegeneratingSummary(false)
+    }
   }
 
   if (isLoading) {
@@ -236,20 +299,65 @@ const TranscriptDetailPage = () => {
         </div>
       </div>
 
+      {/* Regeneration Error Display */}
+      {regenerationError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Regeneration Error</h3>
+              <p className="mt-1 text-sm text-red-700">{regenerationError}</p>
+              <button
+                onClick={() => setRegenerationError(null)}
+                className="mt-2 text-sm text-red-600 hover:text-red-500 underline"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Transcript Text */}
       {transcript.transcriptText && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium text-gray-900">Full Transcript</h2>
-            <button
-              onClick={() => copyToClipboard(transcript.transcriptText!)}
-              className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-              </svg>
-              Copy
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleRegenerateTranscript}
+                disabled={isRegeneratingTranscript || !transcript.storagePath}
+                className="inline-flex items-center px-3 py-1 border border-blue-300 text-sm leading-4 font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={!transcript.storagePath ? "No audio file available for regeneration" : "Regenerate transcript using OpenAI"}
+              >
+                {isRegeneratingTranscript ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-700 mr-1"></div>
+                    Regenerating...
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Regenerate
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => copyToClipboard(transcript.transcriptText!)}
+                className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy
+              </button>
+            </div>
           </div>
           <div className="prose max-w-none">
             <div className="bg-gray-50 rounded-lg p-4 text-sm whitespace-pre-wrap leading-relaxed">
@@ -259,24 +367,59 @@ const TranscriptDetailPage = () => {
         </div>
       )}
 
-      {/* Summary */}
-      {transcript.summaryText && (
+      {/* Summary - Always show if transcript exists */}
+      {transcript.transcriptText && (
         <div className="bg-white rounded-lg shadow-md p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium text-gray-900">Summary</h2>
-            <button
-              onClick={() => copyToClipboard(transcript.summaryText!)}
-              className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            <div className="flex space-x-2">
+              <button
+                onClick={handleRegenerateSummary}
+                disabled={isRegeneratingSummary || !transcript.transcriptText}
+                className="inline-flex items-center px-3 py-1 border border-green-300 text-sm leading-4 font-medium rounded-md text-green-700 bg-white hover:bg-green-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                title={!transcript.transcriptText ? "No transcript available for summarization" : transcript.summaryText ? "Regenerate summary using OpenAI" : "Generate summary using OpenAI"}
+              >
+                {isRegeneratingSummary ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-700 mr-1"></div>
+                    {transcript.summaryText ? 'Regenerating...' : 'Generating...'}
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    {transcript.summaryText ? 'Regenerate' : 'Generate Summary'}
+                  </>
+                )}
+              </button>
+              {transcript.summaryText && (
+                <button
+                  onClick={() => copyToClipboard(transcript.summaryText!)}
+                  className="inline-flex items-center px-3 py-1 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy
+                </button>
+              )}
+            </div>
+          </div>
+          
+          {transcript.summaryText ? (
+            <div className="bg-blue-50 rounded-lg p-4 text-sm leading-relaxed">
+              {transcript.summaryText}
+            </div>
+          ) : (
+            <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg p-6 text-center">
+              <svg className="mx-auto h-8 w-8 text-gray-400 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Copy
-            </button>
-          </div>
-          <div className="bg-blue-50 rounded-lg p-4 text-sm leading-relaxed">
-            {transcript.summaryText}
-          </div>
+              <p className="text-sm font-medium text-gray-500 mb-1">No summary available</p>
+              <p className="text-xs text-gray-400">Click "Generate Summary" to create a summary of this transcript</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -290,51 +433,29 @@ const TranscriptDetailPage = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <div className="flex items-center mb-4">
-              <div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                </svg>
-              </div>
-            </div>
-            <div className="text-center">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Delete Conversation
-              </h3>
-              <p className="text-sm text-gray-500 mb-6">
-                Are you sure you want to delete "{deleteConfirm.filename}"? This action cannot be undone.
-              </p>
-              <div className="flex space-x-3 justify-center">
-                <button
-                  onClick={handleDeleteCancel}
-                  disabled={isDeleting}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteConfirm}
-                  disabled={isDeleting}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 disabled:opacity-50 inline-flex items-center"
-                >
-                  {isDeleting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Deleting...
-                    </>
-                  ) : (
-                    'Delete'
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationDialog
+        isOpen={!!deleteConfirm}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Conversation"
+        message={deleteConfirm ? `Are you sure you want to delete "${deleteConfirm.filename}"? This action cannot be undone.` : ''}
+        confirmText="Delete"
+        confirmButtonVariant="danger"
+        isLoading={isDeleting}
+        loadingText="Deleting..."
+      />
+
+      <ConfirmationDialog
+        isOpen={showTranscriptRegenWarning}
+        onClose={handleTranscriptRegenCancel}
+        onConfirm={performTranscriptRegeneration}
+        title="Regenerate Transcript?"
+        message="Regenerating the transcript will remove the existing summary. You'll need to generate a new summary afterwards. Continue?"
+        confirmText="Yes, Regenerate Transcript"
+        confirmButtonVariant="warning"
+        isLoading={isRegeneratingTranscript}
+        loadingText="Regenerating..."
+      />
     </div>
   )
 }
