@@ -142,3 +142,121 @@ export async function getTranscript(id: string, token: string | null): Promise<C
     throw new Error('Failed to get transcript. Please try again.')
   }
 }
+
+export async function deleteConversation(id: string, token: string | null): Promise<void> {
+  try {
+    console.log('🗑️ Delete conversation - ID:', id, 'Token present:', !!token)
+    
+    const headers = createAuthHeaders(token)
+    console.log('🔐 Delete conversation - Headers:', headers)
+
+    const url = `${API_BASE_URL}/transcripts/${id}`
+    console.log('🌐 Making DELETE request to:', url)
+    
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers
+    })
+    
+    console.log('📡 Delete conversation - Response status:', response.status)
+    
+    if (response.status === 204) {
+      console.log('✅ Conversation deleted successfully')
+      return
+    }
+
+    // Handle non-204 responses
+    await handleApiResponse<void>(response)
+  } catch (error) {
+    console.error('❌ Delete conversation - Error:', error)
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Failed to delete conversation. Please try again.')
+  }
+}
+
+export async function regenerateTranscript(id: string, token: string | null): Promise<Conversation> {
+  try {
+    console.log('🔄 Regenerate transcript - ID:', id, 'Token present:', !!token)
+    
+    const headers = createAuthHeaders(token)
+    console.log('🔐 Regenerate transcript - Headers:', headers)
+
+    const url = `${API_BASE_URL}/transcripts/${id}/regenerate-transcript`
+    console.log('🌐 Making PUT request to:', url)
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers
+    })
+    
+    console.log('📡 Regenerate transcript - Response status:', response.status)
+
+    return handleApiResponse<Conversation>(response)
+  } catch (error) {
+    console.error('❌ Regenerate transcript - Error:', error)
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Failed to regenerate transcript. Please try again.')
+  }
+}
+
+export async function regenerateSummary(id: string, token: string | null): Promise<Conversation> {
+  try {
+    console.log('🔄 Regenerate summary - ID:', id, 'Token present:', !!token)
+    
+    const headers = createAuthHeaders(token)
+    console.log('🔐 Regenerate summary - Headers:', headers)
+
+    const url = `${API_BASE_URL}/transcripts/${id}/regenerate-summary`
+    console.log('🌐 Making PUT request to:', url)
+    
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers
+    })
+    
+    console.log('📡 Regenerate summary - Response status:', response.status)
+
+    return handleApiResponse<Conversation>(response)
+  } catch (error) {
+    console.error('❌ Regenerate summary - Error:', error)
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Failed to regenerate summary. Please try again.')
+  }
+}
+
+export async function reUploadAudio(id: string, file: File, token: string | null): Promise<Conversation> {
+  try {
+    console.log('🔄 Re-upload audio - ID:', id, 'File:', file.name, 'Token present:', !!token)
+    
+    const formData = new FormData()
+    formData.append('audio', file)
+    
+    const headers = createAuthHeaders(token)
+    console.log('🔐 Re-upload audio - Headers:', headers)
+
+    const url = `${API_BASE_URL}/transcripts/${id}/re-upload`
+    console.log('🌐 Making POST request to:', url)
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: formData
+    })
+    
+    console.log('📡 Re-upload audio - Response status:', response.status)
+
+    return handleApiResponse<Conversation>(response)
+  } catch (error) {
+    console.error('❌ Re-upload audio - Error:', error)
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Failed to re-upload audio. Please try again.')
+  }
+}

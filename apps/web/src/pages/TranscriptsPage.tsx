@@ -2,12 +2,15 @@ import { useEffect, useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranscripts } from '../contexts/TranscriptContext'
 import SearchForm from '../components/SearchForm'
+import ConfirmationDialog from '../components/ConfirmationDialog'
 
 const TranscriptsPage = () => {
-  const { transcripts, isLoading, loadTranscripts } = useTranscripts()
+  const { transcripts, isLoading, loadTranscripts, deleteTranscript } = useTranscripts()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchType, setSearchType] = useState('filename')
   const [isSearching, setIsSearching] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, filename: string } | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     loadTranscripts()
@@ -22,6 +25,29 @@ const TranscriptsPage = () => {
     setTimeout(() => {
       setIsSearching(false)
     }, 300)
+  }
+
+  const handleDeleteClick = (id: string, filename: string) => {
+    setDeleteConfirm({ id, filename })
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm) return
+    
+    setIsDeleting(true)
+    try {
+      await deleteTranscript(deleteConfirm.id)
+      setDeleteConfirm(null)
+    } catch (error) {
+      console.error('Delete failed:', error)
+      // Error is already handled in the context and displayed via error state
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirm(null)
   }
 
   const filteredTranscripts = useMemo(() => {
@@ -64,6 +90,11 @@ const TranscriptsPage = () => {
       case 'failed': return 'bg-red-100 text-red-800'
       default: return 'bg-yellow-100 text-yellow-800'
     }
+  }
+
+  // Check if conversation is in failed upload state
+  const isFailedUpload = (transcript: any) => {
+    return transcript.status === 'initial' && (!transcript.storagePath || transcript.storagePath.trim() === '')
   }
 
   return (
@@ -174,16 +205,40 @@ const TranscriptsPage = () => {
                       {formatDate(transcript.createdAt)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <Link
-                        to={`/transcripts/${transcript.id}`}
-                        className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-md transition-colors inline-flex items-center"
-                      >
-                        <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                        </svg>
-                        View Details
-                      </Link>
+                      <div className="flex space-x-3">
+                        {isFailedUpload(transcript) ? (
+                          <Link
+                            to={`/transcripts/${transcript.id}`}
+                            className="text-yellow-600 hover:text-yellow-900 bg-yellow-50 hover:bg-yellow-100 px-3 py-2 rounded-md transition-colors inline-flex items-center"
+                            title="Upload failed - click to re-upload file"
+                          >
+                            <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            Re-upload
+                          </Link>
+                        ) : (
+                          <Link
+                            to={`/transcripts/${transcript.id}`}
+                            className="text-blue-600 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-md transition-colors inline-flex items-center"
+                          >
+                            <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            View Details
+                          </Link>
+                        )}
+                        <button
+                          onClick={() => handleDeleteClick(transcript.id, transcript.originalFilename)}
+                          className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-md transition-colors inline-flex items-center"
+                        >
+                          <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -192,6 +247,18 @@ const TranscriptsPage = () => {
           </div>
         )}
       </div>
+
+      <ConfirmationDialog
+        isOpen={!!deleteConfirm}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Conversation"
+        message={deleteConfirm ? `Are you sure you want to delete "${deleteConfirm.filename}"? This action cannot be undone.` : ''}
+        confirmText="Delete"
+        confirmButtonVariant="danger"
+        isLoading={isDeleting}
+        loadingText="Deleting..."
+      />
     </div>
   )
 }

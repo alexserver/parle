@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import { useAuth } from './AuthContext'
-import { getAllTranscripts, Conversation } from '../api'
+import { getAllTranscripts, deleteConversation, Conversation } from '../api'
 
 interface TranscriptContextType {
   transcripts: Conversation[]
@@ -9,6 +9,7 @@ interface TranscriptContextType {
   error: string | null
   loadTranscripts: () => Promise<void>
   refreshTranscripts: () => Promise<void>
+  deleteTranscript: (id: string) => Promise<void>
 }
 
 const TranscriptContext = createContext<TranscriptContextType | undefined>(undefined)
@@ -67,13 +68,32 @@ export const TranscriptProvider = ({ children }: TranscriptProviderProps) => {
     }
   }, [token, isAuthenticated, isRefreshing])
 
+  const deleteTranscript = useCallback(async (id: string) => {
+    if (!isAuthenticated) return
+    
+    setError(null)
+    try {
+      console.log('🗑️ Deleting transcript:', id)
+      await deleteConversation(id, token)
+      
+      // Remove the transcript from local state immediately (optimistic update)
+      setTranscripts(prev => prev.filter(transcript => transcript.id !== id))
+      console.log('✅ Transcript deleted and removed from local state')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete transcript')
+      console.error('Failed to delete transcript:', err)
+      throw err // Re-throw to allow UI to handle the error
+    }
+  }, [token, isAuthenticated])
+
   const value = {
     transcripts,
     isLoading,
     isRefreshing,
     error,
     loadTranscripts,
-    refreshTranscripts
+    refreshTranscripts,
+    deleteTranscript
   }
 
   return (
